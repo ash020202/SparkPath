@@ -5,11 +5,13 @@ import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
   conversations,
-  fetchChecklistItems,
-  fetchComplianceData,
+  fetchLegalComplianceData,
+  fetchLegalChecklistItems,
+  generateRoadmapTaskGuidance,
+  generateStartupRoadmap,
   generateSWOTAnalysis,
-  mergeChecklistData,
   processQuestion,
+  getFailurePrediction,
 } from "./lib/utils.js";
 
 dotenv.config();
@@ -19,113 +21,168 @@ app.use(cors());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-const PYTHON_SERVER_URL = "http://127.0.0.1:5000/predict";
 
-// API to get failure prediction
+// Endpoint to generate a startup roadmap
+app.post("/api/generate-roadmap", async (req, res) => {
+  try {
+    const roadmapData = await generateStartupRoadmap(req.body);
+
+    res.json({
+      success: true,
+      roadmap: roadmapData,
+    });
+  } catch (error) {
+    console.error("Roadmap Generation Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate roadmap",
+      error: error.message,
+    });
+  }
+});
+
+// Endpoint to generate roadmap task details
+app.post("/api/task-guidance", async (req, res) => {
+  try {
+    const { taskTitle, formData } = req.body;
+    if (!taskTitle || !formData) {
+      return res.status(400).json({
+        success: false,
+        message: "Task title and form data are required.",
+      });
+    }
+
+    const taskGuidance = await generateRoadmapTaskGuidance(taskTitle, formData);
+    res.json({ success: true, data: taskGuidance });
+  } catch (error) {
+    console.error("Task Guidance API Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate task guidance",
+      error: error.message,
+    });
+  }
+});
+
 app.post("/api/failure-prediction", async (req, res) => {
   try {
     const { businessIdea, industry, investment, targetMarket } = req.body;
 
-    // 🔹 Step 1: Get Insights from Gemini API
-    const prompt = `Provide failure risk for ${businessIdea} based on market factors and business insights for a startup in the ${industry} industry targeting ${targetMarket}.`;
+    // Call the utility function to process failure prediction
+    const result = await getFailurePrediction(
+      businessIdea,
+      industry,
+      investment,
+      targetMarket,
+      model
+    );
 
-    // const geminiResponse = await model.generateContent(prompt);
-    // const geminiInsights =
-    //   geminiResponse?.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-    //   "No insights available";
-
-    // 🔹 Step 2: Transform Data for Flask API
-    const requestData = {
-      category_list: industry || "Unknown",
-      funding_total_usd: String(investment), // Default to 1M if undefined
-      funding_rounds: "3",
-      country_code: "US",
-      company_age: 5,
-      funding_gap: 730,
-    };
-    console.log("Request Data Sent to Python:", requestData);
-
-    // 🔹 Step 3: Send Data to Flask ML API
-    const flaskResponse = await axios.post(PYTHON_SERVER_URL, requestData);
-    console.log("Flask Response:", flaskResponse.data);
-
-    if (!flaskResponse.data || flaskResponse.data.risk_factors === undefined) {
-      console.log("Risk factors missing:", flaskResponse.data);
-    }
-
-    // 🔹 Step 4: Return Final Response
-    res.json({
-      success: true,
-      message: "Failure prediction data generated successfully",
-      prediction: flaskResponse.data, // Contains failure_rate, success_rate, risk_factors
-      // insights: geminiInsights, // AI-generated business insights
-    });
+    res.json(result);
   } catch (error) {
     console.error("Error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 });
 
-//legal compliance
-// Endpoint to get all checklist items (without location-specific details)
-app.get("/api/checklist", async (req, res) => {
-  const { country, region } = req.query;
+//Enpoint to competitor analysis
+
+app.post("/api/analyze/swot", async (req, res) => {
   try {
-    const items = await fetchChecklistItems(country, region);
+    const { startupData } = req.body;
+
+    if (!startupData) {
+      return res.status(400).json({
+        error: "Startup profile data is required",
+      });
+    }
+
+    const analysis = await generateSWOTAnalysis(startupData);
+    return res.json(analysis);
+  } catch (error) {
+    return res.status(500).json({
+      error: "An error occurred while generating the analysis",
+      details: error.message,
+    });
+  }
+});
+
+//Endpoints for legal compliance checklist and checklist details
+
+app.post("/api/checklist", async (req, res) => {
+  const {
+    country,
+    region,
+    industry,
+    budget,
+    teamSize,
+    targetMarket,
+    problemStatement,
+    targetCustomer,
+    uniqueValueProposition,
+  } = req.body;
+
+  if (!country || !region) {
+    return res.status(400).json({ error: "Country and region are required" });
+  }
+
+  try {
+    const items = await fetchLegalChecklistItems(
+      country,
+      region,
+      industry,
+      budget,
+      teamSize,
+      targetMarket,
+      problemStatement,
+      targetCustomer,
+      uniqueValueProposition
+    );
     return res.json(items);
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 });
 
-// Endpoint to get location-specific details for a checklist item
-app.get("/api/checklist/:itemId/details", async (req, res) => {
+app.post("/api/checklist/:itemId/details", async (req, res) => {
+  const { itemId } = req.params;
+  const {
+    country,
+    region,
+    industry,
+    budget,
+    teamSize,
+    targetMarket,
+    problemStatement,
+    targetCustomer,
+    uniqueValueProposition,
+  } = req.body;
+
+  if (!country || !region) {
+    return res.status(400).json({ error: "Country and region are required" });
+  }
+
   try {
-    const { itemId } = req.params;
-    const { country, region } = req.query;
-
-    if (!country || !region) {
-      return res.status(400).json({ error: "Country and region are required" });
-    }
-
-    const complianceData = await fetchComplianceData(itemId, country, region);
+    const complianceData = await fetchLegalComplianceData(
+      itemId,
+      country,
+      region,
+      industry,
+      budget,
+      teamSize,
+      targetMarket,
+      problemStatement,
+      targetCustomer,
+      uniqueValueProposition
+    );
     return res.json(complianceData);
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 });
-
-// Endpoint to get complete data for a specific checklist item
-// app.get("/api/checklist/:itemId", async (req, res) => {
-//   try {
-//     const { itemId } = req.params;
-//     const { country, region } = req.query;
-
-//     if (!country || !region) {
-//       return res.status(400).json({ error: "Country and region are required" });
-//     }
-
-//     // Get all checklist items
-//     const allItems = await fetchChecklistItems();
-
-//     // Find the requested item
-//     const item = allItems.find((item) => item.id === itemId);
-//     if (!item) {
-//       return res.status(404).json({ error: "Checklist item not found" });
-//     }
-
-//     // Get location-specific details
-//     const complianceData = await fetchComplianceData(itemId, country, region);
-
-//     // Merge and return complete data
-//     const completeItem = mergeChecklistData(item, complianceData);
-//     return res.json(completeItem);
-//   } catch (error) {
-//     return res.status(500).json({ error: error.message });
-//   }
-// });
 
 // Endpoint to process a question and get mentor advice
 app.post("/api/mentor/ask", async (req, res) => {
@@ -193,28 +250,6 @@ app.post("/api/mentor/reset", (req, res) => {
   } catch (error) {
     return res.status(500).json({
       error: "An error occurred",
-      details: error.message,
-    });
-  }
-});
-
-//Enpoint to competitor analysis
-
-app.post("/api/analyze/swot", async (req, res) => {
-  try {
-    const { startupData } = req.body;
-
-    if (!startupData) {
-      return res.status(400).json({
-        error: "Startup profile data is required",
-      });
-    }
-
-    const analysis = await generateSWOTAnalysis(startupData);
-    return res.json(analysis);
-  } catch (error) {
-    return res.status(500).json({
-      error: "An error occurred while generating the analysis",
       details: error.message,
     });
   }

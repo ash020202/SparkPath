@@ -3,260 +3,300 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
-
+import axios from "axios";
 dotenv.config();
 // Initialize the Gemini API client
 const API_KEY = process.env.GEMINI_API_KEY; // Replace with your actual API key
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-//checklist utils functions
-async function fetchChecklistItems(country, region) {
-  try {
-    // Define the prompt for Gemini to get checklist metadata
-    const prompt = `
-      Generate a comprehensive legal and compliance checklist for startups in ${region}, ${country}.
-      Include 10 essential items covering: that is must do for startups in ${region}, ${country}.
-      
-      Format the response as a JSON array with the following structure for each item:
-      [
+//roadmap utils functions
+
+// Function to generate a startup roadmap
+async function generateStartupRoadmap(details) {
+  const {
+    industry,
+    budgetRange,
+    teamSize,
+    targetMarketSize,
+    country,
+    region,
+    problemStatement,
+    targetCustomer,
+    uniqueValueProposition,
+  } = details;
+
+  const prompt = `Create a detailed, structured startup roadmap in JSON format for a ${teamSize} ${industry} startup in ${region}, ${country}. 
+    Include these specific details about the startup:
+    - Budget Range: ${budgetRange}
+    - Target Market Size: ${targetMarketSize}
+    - Problem Statement: ${problemStatement}
+    - Target Customer: ${targetCustomer}
+    - Unique Value Proposition: ${uniqueValueProposition}
+
+    Generate a JSON with this exact structure:
+    {
+      "phases": [
         {
-          "id": "item-id-in-kebab-case",
-          "title": "Human readable title",
-          "description": "Brief description of what this requirement entails",
-          "priority": "high/medium/low"
+          "name": "Validation Phase",
+          "duration": "3 months",
+          "percentComplete": 0,
+          "tasks": [
+            {
+              "title": "Conduct market research & customer interviews",
+              "description": "Detailed explanation of the task",
+              "status": "Not Started"
+            },
+            // More tasks...
+          ]
         },
-        ...
-      ]
-      
-      Ensure each description is concise but informative enough for entrepreneurs to understand the requirement.
-    `;
-
-    // Generate content with Gemini
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Parse the JSON response
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      throw new Error("Failed to extract JSON from Gemini response");
-    }
-
-    const checklistItems = JSON.parse(jsonMatch[0]);
-    return checklistItems;
-  } catch (error) {
-    console.error("Error fetching checklist items:", error);
-    throw error;
-  }
-}
-
-//Fetches detailed compliance data for a specific checklist item based on user's location
-
-async function fetchComplianceData(checklistItemId, country, region) {
-  try {
-    // Define the prompt for Gemini based on checklist item and location
-    const prompt = `
-      Provide detailed compliance information for ${checklistItemId} in ${region}, ${country}.
-      Format the response as a JSON object with the following structure:
-      {
-        "locationContent": {
-          "${country}": {
-            "${region}": {
-              "what": "Clear explanation of what this requirement is",
-              "why": "Importance and consequences of non-compliance",
-              "how": ["Step 1", "Step 2", "Step 3", ...],
-              "timeline": "Expected completion time",
-              "cost": "Range of costs",
-              "resources": [
-                {"title": "Resource 1", "url": "https://example.com"},
-                ...
-              ],
-              "documents": ["Document 1", "Document 2", ...]
-            }
-          }
+        {
+          "name": "Launch Phase",
+          "duration": "4 months",
+          "percentComplete": 0,
+          "tasks": [
+            // Similar task structure
+          ]
+        },
+        {
+          "name": "Growth Phase",
+          "duration": "6 months",
+          "percentComplete": 0,
+          "tasks": [
+            // Similar task structure
+          ]
+        },
+        {
+          "name": "Scale Phase",
+          "duration": "12 months",
+          "percentComplete": 0,
+          "tasks": [
+            // Similar task structure
+          ]
         }
+      ],
+      "startupProfile": {
+        "industry": "${industry}",
+        "budgetRange": "${budgetRange}",
+        "teamSize": "${teamSize}",
+        "region": "${region}"
       }
-      
-      Ensure all information is accurate, up-to-date, and specific to ${region}, ${country}.
-    `;
-
-    // Generate content with Gemini
+    }`;
+  try {
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const responseText = result.response.text();
 
-    // Parse the JSON response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("Failed to extract JSON from Gemini response");
-    }
-
-    const complianceData = JSON.parse(jsonMatch[0]);
-
-    // Validate the response has the expected structure
-    if (!complianceData.locationContent?.[country]?.[region]) {
-      throw new Error(`No data available for ${region}, ${country}`);
-    }
-
-    return complianceData;
+    // Remove potential markdown formatting and parse JSON
+    const cleanedResponse = responseText.replace(/```json\n?|```/g, "").trim();
+    return JSON.parse(cleanedResponse);
   } catch (error) {
-    console.error("Error fetching compliance data:", error);
-    throw error;
+    console.error("Error generating roadmap:", error);
+    return {
+      phases: [
+        {
+          name: "Validation Phase",
+          duration: "3 months",
+          percentComplete: 0,
+          tasks: [
+            {
+              title: "Conduct market research & customer interviews",
+              description: "Validate market need and potential customer base",
+              status: "Not Started",
+            },
+            {
+              title: "Build MVP (Minimum Viable Product)",
+              description: "Create initial version of the product",
+              status: "Not Started",
+            },
+            {
+              title: "Launch beta testing",
+              description: "Test with 10-20 early users",
+              status: "Not Started",
+            },
+          ],
+        },
+      ],
+      startupProfile: {
+        industry,
+        budgetRange,
+        teamSize,
+        region,
+      },
+    };
   }
 }
 
-//* Merges basic checklist item with its detailed location-specific content
+// Function to generate roadmap task guidance
+async function generateRoadmapTaskGuidance(taskTitle, formData) {
+  const fullPrompt = `Generate a comprehensive guide for the task: "${taskTitle}" based on the provided startup details.
 
-function mergeChecklistData(checklistItem, complianceData) {
-  return {
-    ...checklistItem,
-    locationContent: complianceData.locationContent,
-  };
-}
-
-// Store conversation history (in a real app, use a database)
-export const conversations = {};
-
-// Generate system instructions for the AI Mentor
-
-function getSystemInstructions() {
-  return `
-    You are an AI Mentor specialized in providing guidance to startup founders and entrepreneurs.
-    
-    IMPORTANT RULES:
-    1. Only provide information related to business, startups, entrepreneurship, and legal compliance.
-    2. Do not discuss topics unrelated to business or startups.
-    3. Keep responses concise, practical, and actionable.
-    4. For legal questions, emphasize that you're providing general guidance and recommend consulting with legal professionals.
-    5. Base your advice on established business practices and startup methodologies.
-    6. If asked about something outside your expertise, politely redirect to business topics.
-    7. Avoid political opinions, personal advice unrelated to business, or controversial topics.
-    8. Focus on providing value to early-stage entrepreneurs with clear, actionable steps.
-    
-    RESPONSE FORMAT:
-    - Keep responses under 250 words unless detailed explanation is specifically requested
-    - Use bullet points for steps or lists
-    - Highlight important points or warnings in bold
-    - Include a short, actionable conclusion
-  `;
-}
-
-//Create a prompt that includes system instructions and conversation history
-
-function createPrompt(userMessage, history = []) {
-  const systemInstructions = getSystemInstructions();
-
-  let prompt = `${systemInstructions}\n\nConversation history:\n`;
-
-  // Add conversation history
-  history.forEach((msg) => {
-    const role = msg.role === "user" ? "Human" : "AI Mentor";
-    prompt += `${role}: ${msg.content}\n`;
-  });
-
-  // Add current user message
-  prompt += `Human: ${userMessage}\n\nAI Mentor:`;
-
-  return prompt;
-}
-
-// Process startup-related questions and provide mentorship
-
-async function processQuestion(sessionId, message) {
+  Startup Details:
+  - Industry: ${formData.industry}
+  - Budget Range: ${formData.budgetRange}
+  - Team Size: ${formData.teamSize}
+  - Target Market Size: ${formData.targetMarketSize}
+  - Country: ${formData.country}
+  - Region: ${formData.region}
+  - Problem Statement: ${formData.problemStatement}
+  - Target Customer: ${formData.targetCustomer}
+  - Unique Value Proposition: ${formData.uniqueValueProposition}
+  - Task Title: ${taskTitle}
+  
+  Provide the response in the following structured format:
+  1. Why This Matters (Explain the significance of this task)
+  2. How To Do It Right (Step-by-step guide with the right depth of information)
+  3. Common Pitfalls (Potential mistakes to avoid)
+  4. Resources (Helpful tools, books, or platforms)
+  
+  Ensure:
+  Generate a structured JSON response in this format:
+  {
+    "${taskTitle}": {
+      "taskTitle": "Short and clear title",
+      "whyThisMatters": "Concise explanation of importance.",
+      "howToDoItRight": [
+        {
+          "step": "Step 1 Title",
+          "description": "Clear explanation of the step."
+        },
+        {
+          "step": "Step 2 Title",
+          "description": "Next step's explanation."
+        }
+      ],
+      "commonPitfalls": [
+        "Common Pitfall 1",
+        "Common Pitfall 2"
+      ],
+      "resources": [
+        {
+          "title": "Resource 1 Title",
+          "url": "https://example.com/resource1"
+        },
+        {
+          "title": "Resource 2 Title",
+          "url": "https://example.com/resource2"
+        }
+      ]
+    }
+  }
+  
+  Ensure all values are structured properly without unnecessary line breaks, special characters, or markdown formatting. The output must be JSON-compliant.`;
   try {
-    // Initialize conversation history if it doesn't exist
-    if (!conversations[sessionId]) {
-      conversations[sessionId] = [];
-    }
-
-    // Add user message to history
-    conversations[sessionId].push({
-      role: "user",
-      content: message,
-    });
-
-    // Create prompt with system instructions and history
-    const prompt = createPrompt(message, conversations[sessionId]);
-
-    // Generate content with Gemini
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const aiMessage = response.text();
-
-    // Add AI response to history (limit history to last 10 messages to avoid context limits)
-    conversations[sessionId].push({
-      role: "assistant",
-      content: aiMessage,
-    });
-
-    if (conversations[sessionId].length > 10) {
-      conversations[sessionId] = conversations[sessionId].slice(-10);
-    }
-
-    // Generate suggested follow-up questions
-    const followUps = await generateFollowUpQuestions(
-      sessionId,
-      aiMessage,
-      message
-    );
-
+    const result = await model.generateContent(fullPrompt);
+    const responseText = result.response
+      .text()
+      .replace(/```json|```/g, "")
+      .trim();
+    return JSON.parse(responseText);
+  } catch (error) {
+    console.error("Error generating task guidance:", error);
     return {
-      message: aiMessage,
-      followUpQuestions: followUps,
+      success: false,
+      message: "Failed to generate task guidance",
+      error: error.message,
+    };
+  }
+}
+
+//failure prediction util functions
+// const PYTHON_SERVER_URL = "http://127.0.0.1:5000/predict"; // Replace with actual URL
+
+async function getFailurePrediction(
+  businessIdea,
+  industry,
+  investment,
+  targetMarket
+) {
+  try {
+    // 🔹 Step 1: Prepare Data for Flask API
+    const requestData = {
+      category_list: industry || "Unknown",
+      funding_total_usd: String(investment), // Ensure it's a string
+      funding_rounds: "3",
+      country_code: "US",
+      company_age: 5,
+      funding_gap: 730,
+    };
+    // console.log("Request Data Sent to Python:", requestData);
+
+    // 🔹 Step 2: Get Prediction from Flask API
+    const flaskResponse = await axios.post(
+      process.env.PYTHON_SERVER_URL,
+      requestData
+    );
+    // console.log("Flask Response:", flaskResponse.data);
+
+    if (!flaskResponse.data || flaskResponse.data.risk_factors === undefined) {
+      return {
+        success: false,
+        message: "Invalid response from prediction model",
+      };
+    }
+
+    // 🔹 Step 3: Prepare Prompt for Gemini AI
+    const prompt = `Based on the given startup data:
+    
+    Business Idea: ${businessIdea}
+    Industry: ${industry}
+    Target Market: ${targetMarket}
+    Investment: ${investment}
+
+    Here is the failure risk data from our ML model:
+    ${JSON.stringify(flaskResponse.data)}
+
+    Generate a structured growth strategy that includes:
+    1. A short message on the startup's growth potential.
+    2. Key insights in JSON format for:
+       - Market Fit (% score, risk level, and short suggestion)
+       - Cash Flow (% score, risk level, and short suggestion)
+       - Team Composition (% score, risk level, and short suggestion)
+       - Competition (% score, risk level, and short suggestion)
+       - Scalability (% score, risk level, and short suggestion)
+
+    Ensure the JSON output is properly structured like this:
+    {
+      "success": true,
+      "growthMessage": "A brief summary of the startup's growth potential.",
+      "insights": {
+        "marketFit": { "percentage": 25, "riskLevel": "Low", "suggestion": "Your product-market fit is strong, but continue gathering user feedback to refine your offering." },
+        "cashFlow": { "percentage": 60, "riskLevel": "Medium", "suggestion": "Your runway may be insufficient. Consider securing additional funding or reducing burn rate." },
+        "teamComposition": { "percentage": 15, "riskLevel": "Low", "suggestion": "Your team has the right mix of skills, though you may need to hire a dedicated marketing person." },
+        "competition": { "percentage": 40, "riskLevel": "Low", "suggestion": "Your market has strong competitors. Ensure your differentiation strategy is clear and defensible." },
+        "scalability": { "percentage": 20, "riskLevel": "Low", "suggestion": "Your technology stack is well-positioned for growth with minimal technical debt." }
+      }
+    }`;
+
+    // 🔹 Step 4: Get Insights from Gemini
+    const geminiResponse = await model.generateContent(prompt);
+    const geminiText =
+      geminiResponse?.response
+        ?.text()
+        ?.replace(/```json|```/g, "")
+        .trim() || "{}";
+
+    // Parse JSON safely
+    let structuredInsights;
+    try {
+      structuredInsights = JSON.parse(geminiText);
+    } catch (err) {
+      console.error("Error parsing Gemini response:", err);
+      structuredInsights = { success: false, message: "Invalid AI response" };
+    }
+
+    // 🔹 Step 5: Return Final Data
+    return {
+      success: true,
+      message: "Failure prediction data generated successfully",
+      prediction: flaskResponse.data, // ML model output
+      growthStrategy: structuredInsights, // AI-generated insights
     };
   } catch (error) {
-    console.error("Error processing question:", error);
-    throw error;
+    console.error("Error in failure prediction:", error);
+    return { success: false, message: "Server error", error: error.message };
   }
 }
 
-//Generate follow-up questions based on the conversation context
-
-async function generateFollowUpQuestions(sessionId, aiResponse, userQuestion) {
-  try {
-    const followUpPrompt = `
-      Based on this conversation about startups and business:
-      
-      User Question: ${userQuestion}
-      
-      AI Response: ${aiResponse}
-      
-      Generate exactly 3 short, specific follow-up questions that the user might want to ask next.
-      These should be natural continuations of the conversation and strictly related to business and startups.
-      
-      Format your response as a JSON array of strings with no explanation:
-      ["Question 1?", "Question 2?", "Question 3?"]
-    `;
-
-    const result = await model.generateContent(followUpPrompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Extract JSON array from response
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      return [
-        "How do I find my first customers?",
-        "What metrics should I focus on initially?",
-        "How should I structure my founding team?",
-      ];
-    }
-
-    const followUps = JSON.parse(jsonMatch[0]);
-    return followUps.slice(0, 3); // Ensure we only return 3 questions
-  } catch (error) {
-    console.error("Error generating follow-up questions:", error);
-    // Return default questions if there's an error
-    return [
-      "How do I find my first customers?",
-      "What metrics should I focus on initially?",
-      "How should I structure my founding team?",
-    ];
-  }
-}
-
-//--------------------------------------------------------------------------
 //competitor analysis utils
 
 // Assume this is added to your existing app.js file
@@ -537,6 +577,8 @@ async function verifyCompetitorData(competitors) {
 // Replace with actual API integrations in production
 async function fetchIndustryStats(industry) {
   // Placeholder - connect to real data source in production
+  // console.log("Fetching industry stats for", industry);
+
   const industryData = {
     growthRate: "14.5%",
     averageFundingRound: "$2.1M",
@@ -585,9 +627,267 @@ async function fetchFundingTrends(industry, stage) {
   return fundingData;
 }
 
+//Legal compliance checklist utils functions
+async function fetchLegalChecklistItems(
+  country,
+  region,
+  industry,
+  budget,
+  teamSize,
+  targetMarket,
+  problemStatement,
+  targetCustomer,
+  uniqueValueProposition
+) {
+  try {
+    const prompt = `
+      Generate a comprehensive legal and compliance checklist for a ${industry} startup in ${region}, ${country}.
+      The startup has a budget of ${budget}, a team size of ${teamSize}, and targets a ${targetMarket} market.
+      Problem Statement: ${problemStatement}
+      Target Customer: ${targetCustomer}
+      Unique Value Proposition: ${uniqueValueProposition}
+      
+      Include 10 essential items that are must-do for startups in this context.
+      Format the response as a JSON array with the following structure for each item:
+      [
+        {
+          "id": "item-id-in-kebab-case",
+          "title": "Human readable title",
+          "description": "Brief description of what this requirement entails",
+          "priority": "high/medium/low"
+        }
+      ]
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      throw new Error("Failed to extract JSON from Gemini response");
+    }
+
+    return JSON.parse(jsonMatch[0]);
+  } catch (error) {
+    console.error("Error fetching checklist items:", error);
+    throw error;
+  }
+}
+
+async function fetchLegalComplianceData(
+  checklistItemId,
+  country,
+  region,
+  industry,
+  budget,
+  teamSize,
+  targetMarket,
+  problemStatement,
+  targetCustomer,
+  uniqueValueProposition
+) {
+  try {
+    const prompt = `
+      Provide detailed compliance information for ${checklistItemId} in ${region}, ${country} for a ${industry} startup.
+      The startup has a budget of ${budget}, a team size of ${teamSize}, and targets a ${targetMarket} market.
+      Problem Statement: ${problemStatement}
+      Target Customer: ${targetCustomer}
+      Unique Value Proposition: ${uniqueValueProposition}
+      
+      Format the response as a JSON object with the following structure:
+      {
+        "locationContent": {
+          "${country}": {
+            "${region}": {
+              "what": "Clear explanation of what this requirement is",
+              "why": "Importance and consequences of non-compliance",
+              "how": ["Step 1", "Step 2", "Step 3"],
+              "timeline": "Expected completion time",
+              "cost": "Range of costs",
+              "resources": [{"title": "Resource 1", "url": "https://example.com"}],
+              "documents": ["Document 1", "Document 2"]
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Failed to extract JSON from Gemini response");
+    }
+
+    return JSON.parse(jsonMatch[0]);
+  } catch (error) {
+    console.error("Error fetching compliance data:", error);
+    throw error;
+  }
+}
+
+//* Merges basic checklist item with its detailed location-specific content
+
+function mergeChecklistData(checklistItem, complianceData) {
+  return {
+    ...checklistItem,
+    locationContent: complianceData.locationContent,
+  };
+}
+
+//mentor bot utils
+// Store conversation history (in a real app, use a database)
+export const conversations = {};
+
+// Generate system instructions for the AI Mentor
+
+function getSystemInstructions() {
+  return `
+    You are an AI Mentor specialized in providing guidance to startup founders and entrepreneurs.
+    
+    IMPORTANT RULES:
+    1. Only provide information related to business, startups, entrepreneurship, and legal compliance.
+    2. Do not discuss topics unrelated to business or startups.
+    3. Keep responses concise, practical, and actionable.
+    4. For legal questions, emphasize that you're providing general guidance and recommend consulting with legal professionals.
+    5. Base your advice on established business practices and startup methodologies.
+    6. If asked about something outside your expertise, politely redirect to business topics.
+    7. Avoid political opinions, personal advice unrelated to business, or controversial topics.
+    8. Focus on providing value to early-stage entrepreneurs with clear, actionable steps.
+    
+    RESPONSE FORMAT:
+    - Keep responses under 250 words unless detailed explanation is specifically requested
+    - Use bullet points for steps or lists
+    - Highlight important points or warnings in bold
+    - Include a short, actionable conclusion
+  `;
+}
+
+//Create a prompt that includes system instructions and conversation history
+
+function createPrompt(userMessage, history = []) {
+  const systemInstructions = getSystemInstructions();
+
+  let prompt = `${systemInstructions}\n\nConversation history:\n`;
+
+  // Add conversation history
+  history.forEach((msg) => {
+    const role = msg.role === "user" ? "Human" : "AI Mentor";
+    prompt += `${role}: ${msg.content}\n`;
+  });
+
+  // Add current user message
+  prompt += `Human: ${userMessage}\n\nAI Mentor:`;
+
+  return prompt;
+}
+
+// Process startup-related questions and provide mentorship
+
+async function processQuestion(sessionId, message) {
+  try {
+    // Initialize conversation history if it doesn't exist
+    if (!conversations[sessionId]) {
+      conversations[sessionId] = [];
+    }
+
+    // Add user message to history
+    conversations[sessionId].push({
+      role: "user",
+      content: message,
+    });
+
+    // Create prompt with system instructions and history
+    const prompt = createPrompt(message, conversations[sessionId]);
+
+    // Generate content with Gemini
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const aiMessage = response.text();
+
+    // Add AI response to history (limit history to last 10 messages to avoid context limits)
+    conversations[sessionId].push({
+      role: "assistant",
+      content: aiMessage,
+    });
+
+    if (conversations[sessionId].length > 10) {
+      conversations[sessionId] = conversations[sessionId].slice(-10);
+    }
+
+    // Generate suggested follow-up questions
+    const followUps = await generateFollowUpQuestions(
+      sessionId,
+      aiMessage,
+      message
+    );
+
+    return {
+      message: aiMessage,
+      followUpQuestions: followUps,
+    };
+  } catch (error) {
+    console.error("Error processing question:", error);
+    throw error;
+  }
+}
+
+//Generate follow-up questions based on the conversation context
+
+async function generateFollowUpQuestions(sessionId, aiResponse, userQuestion) {
+  try {
+    const followUpPrompt = `
+      Based on this conversation about startups and business:
+      
+      User Question: ${userQuestion}
+      
+      AI Response: ${aiResponse}
+      
+      Generate exactly 3 short, specific follow-up questions that the user might want to ask next.
+      These should be natural continuations of the conversation and strictly related to business and startups.
+      
+      Format your response as a JSON array of strings with no explanation:
+      ["Question 1?", "Question 2?", "Question 3?"]
+    `;
+
+    const result = await model.generateContent(followUpPrompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // Extract JSON array from response
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      return [
+        "How do I find my first customers?",
+        "What metrics should I focus on initially?",
+        "How should I structure my founding team?",
+      ];
+    }
+
+    const followUps = JSON.parse(jsonMatch[0]);
+    return followUps.slice(0, 3); // Ensure we only return 3 questions
+  } catch (error) {
+    console.error("Error generating follow-up questions:", error);
+    // Return default questions if there's an error
+    return [
+      "How do I find my first customers?",
+      "What metrics should I focus on initially?",
+      "How should I structure my founding team?",
+    ];
+  }
+}
+
+//--------------------------------------------------------------------------
+
 export {
-  fetchChecklistItems,
-  fetchComplianceData,
+  generateStartupRoadmap,
+  generateRoadmapTaskGuidance,
+  getFailurePrediction,
+  fetchLegalChecklistItems,
+  fetchLegalComplianceData,
   mergeChecklistData,
   processQuestion,
   generateSWOTAnalysis,
