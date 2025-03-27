@@ -168,10 +168,7 @@ const StartupForm = () => {
                   <Lightbulb className="mr-2 h-4 w-4" />
                   <span className="hidden sm:inline">Product Details</span>
                 </TabsTrigger>
-                <TabsTrigger value="strategy" className="flex-1">
-                  <TrendingUp className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Growth Strategy</span>
-                </TabsTrigger>
+             
               </TabsList>
               
               <TabsContent value="basics" className="space-y-6 animate-fade-in">
@@ -356,56 +353,7 @@ const StartupForm = () => {
                 </div>
               </TabsContent>
               
-              <TabsContent value="strategy" className="space-y-6 animate-fade-in">
-                <div className="space-y-2">
-                  <Label htmlFor="competitors">Main Competitors</Label>
-                  <Textarea 
-                    id="competitors" 
-                    placeholder="List your main competitors (separated by commas)" 
-                    className="resize-none" 
-                    rows={3}
-                    value={formData.competitors}
-                    onChange={(e) => updateFormData('competitors', e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="goToMarketStrategy">Go-to-Market Strategy</Label>
-                  <Textarea 
-                    id="goToMarketStrategy" 
-                    placeholder="How will you reach your first customers?" 
-                    className="resize-none" 
-                    rows={3}
-                    value={formData.goToMarketStrategy}
-                    onChange={(e) => updateFormData('goToMarketStrategy', e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="revenueModel">Revenue Model</Label>
-                  <Textarea 
-                    id="revenueModel" 
-                    placeholder="How will your startup generate revenue?" 
-                    className="resize-none" 
-                    rows={3}
-                    value={formData.revenueModel}
-                    onChange={(e) => updateFormData('revenueModel', e.target.value)}
-                  />
-                </div>
-                
-                <div className="pt-4 flex justify-between">
-                  <Button type="button" variant="outline" onClick={handleBack} className="w-24">
-                    Back
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    className="px-8"
-                    disabled={!isFormComplete}
-                  >
-                    Generate Roadmap <Zap className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </TabsContent>
+            
             </Tabs>
           </form>
         </CardContent>

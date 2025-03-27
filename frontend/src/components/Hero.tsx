@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 const Hero = () => {
   return (
     <div className="relative overflow-hidden pt-16 md:pt-20">
-      <div className="container mx-auto px-4 pt-16 pb-24 md:pt-32 md:pb-40 relative z-10">
+      <div className="container mx-auto px-4 pt-16 pb-24 md:pb-40 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-block animate-fade-in">
             <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
@@ -44,20 +44,7 @@ const Hero = () => {
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary/10 rounded-full filter blur-3xl"></div>
       </div>
       
-      {/* Feature preview */}
-      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 animate-fade-in" style={{ animationDelay: '400ms' }}>
-        <div className="glass-panel rounded-xl p-2 shadow-lg">
-          <div className="aspect-[16/9] rounded-lg overflow-hidden bg-gray-100">
-            <div className="w-full h-full bg-secondary flex items-center justify-center p-8">
-              <div className="grid grid-cols-3 gap-6 w-full max-w-5xl">
-                <div className="glass-panel rounded-lg h-64 animate-pulse-slow"></div>
-                <div className="glass-panel rounded-lg h-64 animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
-                <div className="glass-panel rounded-lg h-64 animate-pulse-slow" style={{ animationDelay: '1.5s' }}></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+   
     </div>
   );
 };
