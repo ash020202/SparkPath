@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,7 +14,13 @@ const Roadmap = () => {
   const [activePhase, setActivePhase] = useState('0');
   const [checkedSteps, setCheckedSteps] = useState<{ [key: string]: boolean }>({});
   
-  // Use tech roadmap as default
+  // // Use tech roadmap as default
+  // const location = useLocation();
+  // const roadmapData = location.state?.roadmapData;
+  // console.log("Roadmap Data:", window.localStorage.getItem("roadmap"));
+  const roadmapData = JSON.parse(window.localStorage.getItem("roadmap") || '{}');
+  console.log( roadmapData);
+  
   const roadmap = mockRoadmap.tech;
   
   const handleStepToggle = (phaseIndex: number, stepIndex: number) => {
@@ -60,14 +66,14 @@ const Roadmap = () => {
       <Tabs defaultValue="0" value={activePhase} onValueChange={setActivePhase} className="w-full">
         <div className="overflow-x-auto scrollbar-hide">
           <TabsList className="w-full border-b rounded-none h-auto py-0 bg-transparent flex-nowrap justify-start sm:justify-center min-w-max">
-            {roadmap.phases.map((phase, index) => (
+            {roadmapData.phases.map((phase, index) => (
               <TabsTrigger 
                 key={index} 
                 value={index.toString()}
                 className="flex-shrink-0 data-[state=active]:bg-secondary rounded-none border-r last:border-r-0 h-14"
               >
                 <div className="flex flex-col items-center px-2 sm:px-4">
-                  <span className="text-xs sm:text-sm font-medium whitespace-nowrap">{phase.title}</span>
+                  <span className="text-xs sm:text-sm font-medium whitespace-nowrap">{phase.name}</span>
                   <div className="flex items-center mt-1 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3 mr-1" />
                     {phase.duration}
@@ -78,7 +84,7 @@ const Roadmap = () => {
           </TabsList>
         </div>
         
-        {roadmap.phases.map((phase, phaseIndex) => (
+        {roadmapData.phases.map((phase, phaseIndex) => (
           <TabsContent 
             key={phaseIndex} 
             value={phaseIndex.toString()}
@@ -86,7 +92,7 @@ const Roadmap = () => {
           >
             <div className="mb-4 sm:mb-6">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-medium text-sm sm:text-base">{phase.title}</h3>
+                <h3 className="font-medium text-sm sm:text-base">{phase.name}</h3>
                 <span className="text-xs sm:text-sm text-muted-foreground">
                   {getPhaseProgress(phaseIndex)}% Complete
                 </span>
@@ -95,7 +101,7 @@ const Roadmap = () => {
             </div>
             
             <div className="space-y-2 sm:space-y-3">
-              {phase.steps.map((step, stepIndex) => {
+              {roadmapData.phases[phaseIndex].tasks.map((step, stepIndex) => {
                 const key = `${phaseIndex}-${stepIndex}`;
                 const isChecked = checkedSteps[key] || false;
                 
@@ -132,10 +138,7 @@ const Roadmap = () => {
                         <span className="sr-only">View details</span>
                       </Button>
                     </div>
-                    
-                    {isChecked && (
-                      <Check className="h-4 w-4 ml-auto text-primary shrink-0" />
-                    )}
+
                   </div>
                 );
               })}

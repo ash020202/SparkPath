@@ -50,6 +50,8 @@ export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }));
   };
 
+  // console.log(formData);
+  
   const resetForm = () => {
     setFormData(defaultFormData);
   };

@@ -27,13 +27,13 @@ app.post("/api/generate-roadmap", async (req, res) => {
   try {
     const roadmapData = await generateStartupRoadmap(req.body);
 
-    res.json({
+   return res.json({
       success: true,
       roadmap: roadmapData,
     });
   } catch (error) {
     console.error("Roadmap Generation Error:", error);
-    res.status(500).json({
+   return res.status(500).json({
       success: false,
       message: "Failed to generate roadmap",
       error: error.message,
@@ -53,10 +53,10 @@ app.post("/api/task-guidance", async (req, res) => {
     }
 
     const taskGuidance = await generateRoadmapTaskGuidance(taskTitle, formData);
-    res.json({ success: true, data: taskGuidance });
+    return res.json({ success: true, data: taskGuidance });
   } catch (error) {
     console.error("Task Guidance API Error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to generate task guidance",
       error: error.message,
@@ -77,10 +77,10 @@ app.post("/api/failure-prediction", async (req, res) => {
       model
     );
 
-    res.json(result);
+   return res.json(result);
   } catch (error) {
     console.error("Error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server error",
       error: error.message,

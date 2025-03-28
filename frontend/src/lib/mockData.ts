@@ -1,6 +1,6 @@
 // Startup Industries
 export const industries = [
-  { value: "tech", label: "Technology & SaaS" },
+  { value: "Technology & SaaS", label: "Technology & SaaS" },
   { value: "health", label: "Healthcare & Biotech" },
   { value: "finance", label: "Fintech & Finance" },
   { value: "ecommerce", label: "E-commerce & Retail" },

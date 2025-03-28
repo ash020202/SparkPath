@@ -106,9 +106,7 @@ const LegalChecklist = () => {
                 </div>
               </div>
               
-              {item.completed && (
-                <Check className="h-4 w-4 text-primary shrink-0" />
-              )}
+           
             </div>
           ))}
         </div>

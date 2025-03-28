@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowRight, Building, DollarSign, Users, BarChart, Lightbulb, Target, Zap, TrendingUp, LineChart, Globe, MapPin } from 'lucide-react';
 import { useFormContext } from '@/context/FormContext';
 import { industries, budgetRanges, teamSizes, marketSizes } from '@/lib/mockData';
+import { generateRoadmap } from '@/lib/action';
 
 // Sample data for countries and regions
 const countries = [
@@ -121,6 +122,7 @@ const regionsByCountry: Record<string, Array<{ value: string; label: string }>> 
 
 const StartupForm = () => {
   const { formData, updateFormData, isFormComplete } = useFormContext();
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('basics');
   const navigate = useNavigate();
   
@@ -128,14 +130,27 @@ const StartupForm = () => {
     setActiveTab(value);
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    // console.log(formData);
+    setLoading(true);
     e.preventDefault();
-    navigate('/roadmap-result');
+    try {
+    const response= await generateRoadmap(formData);
+    if (response) {
+      navigate("/roadmap-result", { state: { response } }); // ✅ Navigate with data
+    }
+      
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
   
   const handleNext = () => {
     if (activeTab === 'basics') setActiveTab('details');
     else if (activeTab === 'details') setActiveTab('strategy');
+  
   };
   
   const handleBack = () => {
@@ -146,6 +161,9 @@ const StartupForm = () => {
   const getRegionsForCountry = (countryCode: string) => {
     return regionsByCountry[countryCode] || [];
   };
+  // useEffect(() => {
+  //   console.log('Updated formData:', formData);
+  // }, [formData]);
   
   return (
     <div className="max-w-4xl mx-auto">
@@ -347,8 +365,8 @@ const StartupForm = () => {
                   <Button type="button" variant="outline" onClick={handleBack} className="w-24">
                     Back
                   </Button>
-                  <Button type="button" onClick={handleNext} className="w-24">
-                    Next <ArrowRight className="ml-2 h-4 w-4" />
+                  <Button type="submit" className="px-8" disabled={loading} >
+                  {loading ? "Generating..." : "Generate Roadmap"}<ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </TabsContent>

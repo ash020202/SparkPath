@@ -19,7 +19,7 @@ const RoadmapResult = () => {
       <div className="min-h-screen flex flex-col">
         <Navbar />
         
-        <main className="flex-1 pt-16 sm:pt-20">
+        <main className="flex-1 pt-16 sm:pt-20 relative">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
             <div className="max-w-3xl mx-auto text-center mb-8 sm:mb-12">
               <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
@@ -82,9 +82,28 @@ const RoadmapResult = () => {
               </div>
             </Tabs>
           </div>
+          {/* <Tabs defaultValue="roadmap" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList>
+          <TabsTrigger value="mentor" className="whitespace-nowrap hover:scale-90 fixed flex cursor-pointer py-4 px-8 shadow-lg bottom-20 right-20 z-10 rounded-md  bg-primary">
+          <Bot className="h-5 w-5 mr-1 sm:mr-2 text-black" />
+          <span className="text-xs sm:text-sm text-black">AI Mentor</span>
+          </TabsTrigger>
+        <div className='w-full h-full p-20 backdrop-blur-lg flex items-center justify-center absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'>
+          <TabsContent value="mentor" className="animate-fade-in  backdrop-blur-lg">
+                  <AIMentor />
+                </TabsContent>
+                </div>
+          </TabsList>
+          <div>
+            
+          </div>
+       
+      
+          </Tabs> */}
+         
         </main>
         
-        <Footer />
+ 
       </div>
     </FormProvider>
   );
