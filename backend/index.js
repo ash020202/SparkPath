@@ -13,20 +13,24 @@ import {
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_BASE_URL,
+  }),
+);
 
 // Endpoint to generate a startup roadmap
 app.post("/api/generate-roadmap", async (req, res) => {
   try {
     const roadmapData = await generateStartupRoadmap(req.body);
 
-   return res.json({
+    return res.json({
       success: true,
       roadmap: roadmapData,
     });
   } catch (error) {
     console.error("Roadmap Generation Error:", error);
-   return res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to generate roadmap",
       error: error.message,
@@ -59,16 +63,18 @@ app.post("/api/task-guidance", async (req, res) => {
 
 app.post("/api/failure-prediction", async (req, res) => {
   try {
-   const{ industry,
-    budget,
-    teamSize,
-    marketSize,
-    country}= req.body;
+    const { industry, budget, teamSize, marketSize, country } = req.body;
 
     // Call the utility function to process failure prediction
-    const result = await getFailurePrediction(industry, budget, teamSize, marketSize, country);
+    const result = await getFailurePrediction(
+      industry,
+      budget,
+      teamSize,
+      marketSize,
+      country,
+    );
 
-   return res.json(result);
+    return res.json(result);
   } catch (error) {
     console.error("Error:", error);
     return res.status(500).json({
@@ -105,7 +111,6 @@ app.post("/api/swot-analysis", async (req, res) => {
 
 app.post("/api/checklist", async (req, res) => {
   const {
-   
     industry,
     budget,
     teamSize,
@@ -131,7 +136,7 @@ app.post("/api/checklist", async (req, res) => {
       targetMarket,
       problemStatement,
       targetCustomer,
-      uniqueValueProposition
+      uniqueValueProposition,
     );
     return res.json(items);
   } catch (error) {
@@ -168,7 +173,7 @@ app.post("/api/checklist/:itemId/details", async (req, res) => {
       targetMarket,
       problemStatement,
       targetCustomer,
-      uniqueValueProposition
+      uniqueValueProposition,
     );
     return res.json(complianceData);
   } catch (error) {
@@ -179,7 +184,7 @@ app.post("/api/checklist/:itemId/details", async (req, res) => {
 // Endpoint to process a question and get mentor advice
 app.post("/api/mentor/ask", async (req, res) => {
   try {
-    const { sessionId, message,formData } = req.body;
+    const { sessionId, message, formData } = req.body;
 
     if (!sessionId || !message) {
       return res.status(400).json({
@@ -187,7 +192,7 @@ app.post("/api/mentor/ask", async (req, res) => {
       });
     }
 
-    const response = await processQuestion(sessionId, message,formData);
+    const response = await processQuestion(sessionId, message, formData);
     return res.json(response);
   } catch (error) {
     return res.status(500).json({
