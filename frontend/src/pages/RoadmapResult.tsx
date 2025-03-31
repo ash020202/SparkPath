@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import Roadmap from '@/components/Roadmap';
 import FailurePrediction from '@/components/FailurePrediction';
 import CompetitorAnalysis from '@/components/CompetitorAnalysis';
@@ -81,26 +80,7 @@ const RoadmapResult = () => {
                 </TabsContent>
               </div>
             </Tabs>
-          </div>
-          {/* <Tabs defaultValue="roadmap" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList>
-          <TabsTrigger value="mentor" className="whitespace-nowrap hover:scale-90 fixed flex cursor-pointer py-4 px-8 shadow-lg bottom-20 right-20 z-10 rounded-md  bg-primary">
-          <Bot className="h-5 w-5 mr-1 sm:mr-2 text-black" />
-          <span className="text-xs sm:text-sm text-black">AI Mentor</span>
-          </TabsTrigger>
-        <div className='w-full h-full p-20 backdrop-blur-lg flex items-center justify-center absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'>
-          <TabsContent value="mentor" className="animate-fade-in  backdrop-blur-lg">
-                  <AIMentor />
-                </TabsContent>
-                </div>
-          </TabsList>
-          <div>
-            
-          </div>
-       
-      
-          </Tabs> */}
-         
+          </div>  
         </main>
         
  

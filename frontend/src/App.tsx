@@ -30,7 +30,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/roadmap-result" element={<RoadmapResult />} />
-                <Route path="/checklist-item/:phaseIndex/:stepIndex/:itemTitle" element={<ChecklistItemDetail />} />
+                <Route path="/checklist-item/:itemTitle" element={<ChecklistItemDetail />} />
                 <Route path="/legal-checklist-item/:itemTitle" element={<LegalChecklistItemDetail />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

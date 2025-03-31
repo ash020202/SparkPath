@@ -8,19 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Clock, DollarSign, FileText, ListChecks, BookOpen, Link2, FileQuestion } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import { mockLegalChecklist, mockLegalDetails } from '@/lib/mockData';
+import { generateLegalChecklistDetails } from '@/lib/action';
+import PageLoader from '@/components/PageLoader';
+import ReactMarkdown from 'react-markdown';
+import { LegalDetailDataType } from '@/lib/types';
 
-type LegalDetailDataType = {
-  title: string;
-  what: string;
-  why: string;
-  how: string[];
-  timeline: string;
-  cost: string;
-  resources: { title: string; url: string }[];
-  documents: string[];
-};
+
 
 const LegalChecklistItemDetail = () => {
   const { itemTitle } = useParams<{ itemTitle: string }>();
@@ -28,49 +21,61 @@ const LegalChecklistItemDetail = () => {
   const [activeTab, setActiveTab] = useState('what');
   const [item, setItem] = useState<LegalDetailDataType | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const [progress, setProgress] = useState(0);
+  
   useEffect(() => {
-    if (!itemTitle) return;
-    
-    // Find the item in mockLegalChecklist
-    const decodedTitle = decodeURIComponent(itemTitle);
-    const foundItem = mockLegalChecklist.find(item => item.title === decodedTitle);
-    
-    if (foundItem) {
-      // Get the detailed info from mockLegalDetails
-      const detailedInfo = mockLegalDetails.find(detail => detail.title === decodedTitle);
-      
-      if (detailedInfo) {
-        setItem(detailedInfo);
-      } else {
-        // Fallback if no detailed info is found
-        setItem({
-          title: foundItem.title,
-          what: "Detailed explanation coming soon.",
-          why: "Information about importance and compliance will be added.",
-          how: ["We're working on adding detailed steps."],
-          timeline: "Varies",
-          cost: "Varies",
-          resources: [],
-          documents: []
-        });
-      }
+    const formData = JSON.parse(localStorage.getItem("formData") || '{}');
+    if (!formData || !itemTitle) {
+      navigate("/roadmap-result");
+      return;
     }
-    
-    setLoading(false);
-  }, [itemTitle]);
+    const fetchData = async () => {
+      try {
+       if(!localStorage.getItem(`${itemTitle}-explaination`)){
+        console.log("Fetching new data...");
+        const result = await generateLegalChecklistDetails({ formData, taskTitle: itemTitle });
+        console.log(result);
+        
+        if (result) {
+          console.log("working")
+          setItem(result);
+        }
+       }
+  
+       else {
+         setItem(JSON.parse(localStorage.getItem(`${itemTitle}-explaination`) || '{}'));
+       }
+       
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } 
+      finally{
+        setLoading(false);
+      }
+    };
+  
+    fetchData();
+  
+  }, [itemTitle, navigate]);
+  
 
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    setProgress((prev) => (prev < 100 ? prev + 10 : 100));
+  }, 300);
+
+  return () => clearInterval(interval);
+}, []);
+
+
+
+if (loading) return <PageLoader loading={loading} progress={progress} />;
   const handleBack = () => {
     navigate(-1);
   };
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
-
-  if (!item) {
-    return <div className="min-h-screen flex items-center justify-center">Item not found</div>;
-  }
+ 
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -91,9 +96,9 @@ const LegalChecklistItemDetail = () => {
           <Card className="glass-panel border-none shadow-lg animate-fade-in">
             <CardHeader className="border-b border-border pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
-                  <FileText className="h-6 w-6 text-primary" />
-                  {item.title}
+                <CardTitle className="text-md sm:text-lg flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  {item?.title}
                 </CardTitle>
               </div>
               <CardDescription className="mt-2">
@@ -131,63 +136,79 @@ const LegalChecklistItemDetail = () => {
                 </TabsList>
               </div>
               
-              <CardContent className="px-4 sm:px-6 pb-6">
+              <CardContent className="px-6 pb-6 flex justify-center">
                 <TabsContent value="what" className="animate-fade-in mt-0">
-                  <div className="prose dark:prose-invert max-w-none">
-                    <p className="text-base leading-relaxed">{item.what}</p>
+                  <div className="prose dark:prose-invert max-w-none flex justify-center">
+                    <p className="text-base leading-relaxed w-[80%] text-justify p-5">{item?.what}</p>
+                 
                   </div>
                 </TabsContent>
                 
                 <TabsContent value="why" className="animate-fade-in mt-0">
-                  <div className="prose dark:prose-invert max-w-none">
-                    <p className="text-base leading-relaxed">{item.why}</p>
+                  <div className="prose dark:prose-invert max-w-none flex justify-center">
+                    <div className='text-base leading-relaxed w-[80%] text-justify p-5'>
+                    <ReactMarkdown>{item?.why}</ReactMarkdown>
+
+                    </div>
+
                   </div>
                 </TabsContent>
                 
                 <TabsContent value="how" className="animate-fade-in mt-0">
                   <ScrollArea className="h-[300px] pr-4">
-                    <ol className="space-y-4 list-decimal list-inside">
-                      {item.how.map((step, index) => (
-                        <li key={index} className="text-base">
-                          <div className="inline-block pl-1">{step}</div>
-                        </li>
-                      ))}
+                    <ol className="space-y-4 list-none list-inside flex flex-col items-center">
+                    {item?.how?.length ? (
+                        item.how.map((step, index) => (
+                          <li key={index} className="text-base w-[80%] text-justify px-5">
+                            <ReactMarkdown>
+                            {step}
+                            </ReactMarkdown>
+                           
+                          </li>
+                        ))
+                      ) : (
+                        <p>Loading data...</p>
+                      )}
                     </ol>
                   </ScrollArea>
                 </TabsContent>
                 
-                <TabsContent value="timeline" className="animate-fade-in mt-0">
-                  <div className="flex items-center gap-2 mb-3">
+                <TabsContent value="timeline" className="animate-fade-in mt-0 flex flex-col">
+                  <div className="flex items-center gap-2 mb-3 px-40">
                     <Clock className="h-5 w-5 text-primary" />
                     <h3 className="text-lg font-medium">Estimated Timeline</h3>
                   </div>
-                  <p className="text-base leading-relaxed">{item.timeline}</p>
+                  <p className="text-base leading-relaxed text-justify px-40">{item?.timeline}</p>
                 </TabsContent>
                 
                 <TabsContent value="cost" className="animate-fade-in mt-0">
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-3 px-40">
                     <DollarSign className="h-5 w-5 text-primary" />
                     <h3 className="text-lg font-medium">Estimated Cost</h3>
                   </div>
-                  <p className="text-base leading-relaxed">{item.cost}</p>
+             <div className='px-40 text-justify'>
+
+                  <ReactMarkdown>{item?.cost}</ReactMarkdown>
+             </div>
+      
                 </TabsContent>
                 
                 <TabsContent value="resources" className="animate-fade-in mt-0">
-                  <div className="space-y-6">
+                  <div className="space-y-6 px-40">
                     <div>
                       <h3 className="text-lg font-medium mb-3">Helpful Resources</h3>
-                      {item.resources.length > 0 ? (
+                      {item?.resources?.length > 0 ? (
                         <ul className="space-y-2">
-                          {item.resources.map((resource, index) => (
+                          {item?.resources?.map((resource, index) => (
                             <li key={index}>
                               <a 
-                                href={resource.url} 
+                                href={resource?.url} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-primary hover:underline flex items-center gap-1"
                               >
                                 <Link2 className="h-4 w-4" />
-                                {resource.title}
+                                {resource?.title}
                               </a>
                             </li>
                           ))}
@@ -199,12 +220,14 @@ const LegalChecklistItemDetail = () => {
                     
                     <div>
                       <h3 className="text-lg font-medium mb-3">Required Documents</h3>
-                      {item.documents.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {item.documents.map((doc, index) => (
-                            <Badge key={index} variant="outline" className="flex items-center gap-1">
-                              <FileText className="h-3 w-3" />
-                              {doc}
+                      {item?.documents?.length > 0 ? (
+                        <div className="flex flex-wrap gap-3">
+                          {item?.documents?.map((doc, index) => (
+                            <Badge key={index} variant="outline" className="flex items-center justify-between w-fit p-3">
+                              <div className='flex p-5 gap-1'>
+                              <ReactMarkdown>{doc}</ReactMarkdown>
+
+                              </div>
                             </Badge>
                           ))}
                         </div>
@@ -220,7 +243,7 @@ const LegalChecklistItemDetail = () => {
         </div>
       </main>
       
-      <Footer />
+      
     </div>
   );
 };

@@ -154,7 +154,7 @@ const Index = () => {
         </section>
       </main>
       
-      {/* <Footer /> */}
+      <Footer />
     </div>
   );
 };

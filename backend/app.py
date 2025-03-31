@@ -1,424 +1,118 @@
-# from flask import Flask, request, jsonify
-# import numpy as np
-# import random
-# from sklearn.ensemble import RandomForestClassifier
-
-# app = Flask(__name__)
-
-# # Mock dataset for training
-# training_data = np.array([
-#     [10000, 1, 0],  # Small investment, high risk industry
-#     [500000, 3, 1],  # Medium investment, medium risk
-#     [1000000, 5, 1],  # High investment, stable industry
-# ])
-
-# labels = np.array([0, 1, 1])  # 0 = Failure, 1 = Success
-
-# # Train Random Forest Model
-# model = RandomForestClassifier(n_estimators=10, random_state=42)
-# model.fit(training_data, labels)
-
-# @app.route('/predict', methods=['POST'])
-# def predict():
-#     data = request.json
-#     industry = data["industry"]
-#     investment = int(data["investment"])
-#     target_market = data["targetMarket"]
-#     gemini_insights = data["geminiInsights"]
-
-#     # Convert industry & market data to numerical values (mock encoding)
-#     industry_risk = random.randint(1, 5)  # Assume industry risk rating (1 = high risk, 5 = low risk)
-#     target_market_size = random.randint(1, 5)  # Assume market potential (1 = small, 5 = large)
-
-#     # Prepare data for prediction
-#     input_data = np.array([[investment, industry_risk, target_market_size]])
-#     prediction = model.predict(input_data)[0]
-#     failure_rate = random.randint(10, 70) if prediction == 0 else random.randint(0, 30)
-#     success_rate = 100 - failure_rate
-
-#     response = {
-#         "failure_rate": failure_rate,
-#         "success_rate": success_rate,
-#         "insights": gemini_insights,
-#     }
-
-#     return jsonify(response)
-
-# if __name__ == '__main__':
-#     app.run(port=5000, debug=True)
-
-
-
-
-#-----------------------------------------------------------------
-
-#correct response giving but idk its accurate and real.
-# from flask import Flask, request, jsonify
-# import numpy as np
-# import pandas as pd
-# import joblib
-# from sklearn.ensemble import RandomForestClassifier
-# from sklearn.model_selection import train_test_split
-# from sklearn.preprocessing import LabelEncoder
-
-# app = Flask(__name__)
-
-# # ✅ Step 1: Load and preprocess Crunchbase dataset
-# df = pd.read_csv("business_data.csv")  # Ensure this is the correct dataset
-# print("Dataset Preview:\n", df.head())  # First 5 rows
-# print("\nDataset Info:\n")  
-# print(df.info())  # Column types & missing values  
-# print("\nDataset Summary:\n")  
-# print(df.describe(include="all"))  # Statistical summary of all columns
-
-#  # Verify data format
-
-# # ✅ Handling missing and incorrect values
-# df.replace("-", np.nan, inplace=True)  # Convert '-' to NaN
-# df.dropna(inplace=True)  # Drop rows with missing values
-
-# # ✅ Selecting relevant features
-# features = ["category_list", "funding_total_usd", "funding_rounds", "country_code", "status"]
-# label = "status"  # Predict if business is "operating" or "closed"
-
-# # ✅ Converting categorical columns
-# label_encoders = {}
-# for col in ["category_list", "country_code", "status"]:  # Categorical features
-#     le = LabelEncoder()
-#     df[col] = le.fit_transform(df[col])
-#     label_encoders[col] = le  # Store encoder for API use
-# # print(df["status"].value_counts())
-
-# # ✅ Converting numeric columns
-# df["funding_total_usd"] = pd.to_numeric(df["funding_total_usd"], errors="coerce")
-# df["funding_rounds"] = pd.to_numeric(df["funding_rounds"], errors="coerce")
-# df.dropna(inplace=True)  # Ensure no NaN values remain
-
-# # ✅ Splitting dataset
-# X_train, X_test, y_train, y_test = train_test_split(df[features], df[label], test_size=0.2, random_state=42)
-
-# # ✅ Training RandomForest Model
-# rf_model = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42)
-# rf_model.fit(X_train, y_train)
-
-# # ✅ Save model
-# joblib.dump(rf_model, "random_forest_model.pkl")
-
-# # ✅ API Endpoint
-# @app.route("/predict", methods=["POST"])
-# def predict_failure():
-#     try:
-#         data = request.json  # Get input JSON
-#         print("Received Data:", data)  # Debugging - print input JSON
-
-#         # Convert input to DataFrame
-#         input_data = pd.DataFrame([data])
-#         print("DataFrame after conversion:", input_data)  # Debugging
-
-#         # Check if all required columns exist
-#         for col in features:
-#             if col not in input_data.columns:
-#                 return jsonify({"error": f"Missing key '{col}' in input data"})
-
-#         # Convert categorical features using LabelEncoder
-#         for col in label_encoders:
-#             if col in input_data.columns:
-#                 if input_data[col][0] not in label_encoders[col].classes_:
-#                     print(f"⚠️ Warning: New category '{input_data[col][0]}' in {col}, assigning default value.")
-#                     input_data[col] = -1  # Assign unseen labels as -1 (unknown)
-#                 else:
-#                     input_data[col] = label_encoders[col].transform(input_data[col])
-
-#         # Convert numeric fields
-#         input_data["funding_total_usd"] = pd.to_numeric(input_data["funding_total_usd"], errors="coerce")
-#         input_data["funding_rounds"] = pd.to_numeric(input_data["funding_rounds"], errors="coerce")
-
-#         # Handle missing values
-#         input_data.fillna(0, inplace=True)
-
-#         # Load trained model
-#         model = joblib.load("random_forest_model.pkl")
-
-#         # Predict probabilities
-#         prediction = model.predict_proba(input_data)[0]
-
-#         # API Response
-#         response = {
-#             "failure_rate": round(prediction[0] * 100, 2),
-#             "success_rate": round(prediction[1] * 100, 2),
-#             "risk_factors": "Consider diversifying revenue sources and improving funding strategies."
-#         }
-
-#         return jsonify(response)
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)})
-
-
-# # ✅ Run Flask app
-# if __name__ == "__main__":
-#     app.run(debug=True)
-
-
-
-#-------------------------------------------------------------------------------------
-#everything working fine for below but i need more accurate
-
-
-# from flask import Flask, request, jsonify
-# import numpy as np
-# import pandas as pd
-# import joblib
-# from sklearn.ensemble import RandomForestClassifier
-# from sklearn.model_selection import train_test_split
-# from sklearn.preprocessing import LabelEncoder
-# from sklearn.impute import SimpleImputer
-
-# app = Flask(__name__)
-
-# # ✅ Load and preprocess dataset
-# df = pd.read_csv("business_data.csv")
-# df.replace("-", np.nan, inplace=True)
-
-# # ✅ Define features and label
-# features = ["category_list", "funding_total_usd", "funding_rounds", "country_code"]
-# label = "status"
-
-# # ✅ Encode categorical columns
-# label_encoders = {}
-# for col in ["category_list", "country_code", "status"]:
-#     df[col] = df[col].astype(str)
-#     le = LabelEncoder()
-#     df[col] = le.fit_transform(df[col])
-#     label_encoders[col] = le
-
-# # ✅ Convert numeric columns
-# df["funding_total_usd"] = pd.to_numeric(df["funding_total_usd"], errors="coerce")
-# df["funding_rounds"] = pd.to_numeric(df["funding_rounds"], errors="coerce")
-
-# # ✅ Handle missing values
-# imputer = SimpleImputer(strategy="mean")
-# df[["funding_total_usd", "funding_rounds"]] = imputer.fit_transform(df[["funding_total_usd", "funding_rounds"]])
-
-# # ✅ Split dataset and train model
-# X_train, X_test, y_train, y_test = train_test_split(df[features], df[label], test_size=0.2, random_state=42)
-# rf_model = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42)
-# rf_model.fit(X_train, y_train)
-
-# # ✅ Save model and imputer
-# joblib.dump(rf_model, "random_forest_model.pkl")
-# joblib.dump(imputer, "imputer.pkl")
-
-# # ✅ API Endpoint
-# @app.route("/predict", methods=["POST"])
-# def predict_failure():
-#     try:
-#         data = request.json
-#         print("Received Data:", data)
-
-#         # Convert input to DataFrame
-#         input_data = pd.DataFrame([data])
-
-#         # Ensure only expected features are included
-#         input_data = input_data[features]
-
-#         # Convert categorical features
-#         for col in ["category_list", "country_code"]:
-#             if col in input_data.columns:
-#                 if input_data[col][0] not in label_encoders[col].classes_:
-#                     print(f"⚠️ Warning: New category '{input_data[col][0]}' in {col}, assigning default value.")
-#                     input_data[col] = -1  # Assign unseen labels as -1 (unknown)
-#                 else:
-#                     input_data[col] = label_encoders[col].transform(input_data[col])
-
-#         # Convert numeric fields properly
-#         input_data["funding_total_usd"] = pd.to_numeric(input_data["funding_total_usd"], errors="coerce")
-#         input_data["funding_rounds"] = pd.to_numeric(input_data["funding_rounds"], errors="coerce")
-
-#         # Handle missing values
-#         input_data.fillna(0, inplace=True)
-
-#         # Load trained model
-#         model = joblib.load("random_forest_model.pkl")
-
-#         # Predict probabilities
-#         prediction = model.predict_proba(input_data)[0]
-#         failure_rate = round(prediction[0] * 100, 2)
-#         success_rate = round(prediction[1] * 100, 2)
-
-#         # Ensure probabilities sum to 100%
-#         success_rate = 100 - failure_rate  # Adjust in case of rounding issues
-
-#         # ✅ Fixed: Convert input values before comparison
-#         funding_total = float(input_data["funding_total_usd"].values[0])
-#         funding_rounds = int(input_data["funding_rounds"].values[0])
-
-#         # ✅ Dynamic Risk Analysis
-#         risk_factors = []
-#         if funding_total < 1_000_000:
-#             risk_factors.append("Low funding—consider seeking additional investment.")
-#         if funding_rounds < 2:
-#             risk_factors.append("Limited funding rounds—network with investors for growth.")
-#         if data["category_list"].lower() in ["hardware", "biotech"]:
-#             risk_factors.append("High capital-intensive industry—ensure strong financial planning.")
-
-#         risk_message = " | ".join(risk_factors) if risk_factors else "Business is financially stable."
-
-#         # ✅ API Response
-#         response = {
-#             "failure_rate": failure_rate,
-#             "success_rate": success_rate,
-#             "risk_factors": risk_message
-#         }
-
-#         return jsonify(response)
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)})
-
-# # ✅ Run Flask app
-# if __name__ == "__main__":
-#     app.run(debug=True)
-
 from flask import Flask, request, jsonify
 import numpy as np
 import pandas as pd
-import joblib
-from sklearn.ensemble import RandomForestClassifier
+import pickle
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.impute import SimpleImputer
+from sklearn.ensemble import RandomForestClassifier
 
 app = Flask(__name__)
 
-# ✅ Step 1: Load and preprocess dataset
-df = pd.read_csv("business_data.csv")
-df.replace("-", np.nan, inplace=True)  # Convert '-' to NaN
+# Load dataset
+df = pd.read_csv("startup_dataset_updated.csv")
 
-# ✅ Convert Date Columns
-df["founded_at"] = pd.to_datetime(df["founded_at"], errors="coerce")
-df["first_funding_at"] = pd.to_datetime(df["first_funding_at"], errors="coerce")
-df["last_funding_at"] = pd.to_datetime(df["last_funding_at"], errors="coerce")
+# Load encoders
+with open("encoders.pkl", "rb") as f:
+    encoders = pickle.load(f)
 
-# ✅ Feature Engineering - Adding new risk factors
-df["company_age"] = 2025 - df["founded_at"].dt.year  # Company age in years
-df["funding_gap"] = (df["last_funding_at"] - df["first_funding_at"]).dt.days  # Funding gap in days
+# Split data
+X = df.drop(columns=["success"])
+y = df["success"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# ✅ Convert numeric columns
-df["funding_total_usd"] = pd.to_numeric(df["funding_total_usd"], errors="coerce")
-df["funding_rounds"] = pd.to_numeric(df["funding_rounds"], errors="coerce")
+# Train RandomForest model
+# model = RandomForestClassifier(n_estimators=100, random_state=42,class_weight="balanced")
+model = RandomForestClassifier(n_estimators=50, max_depth=10, class_weight="balanced", random_state=42)
 
-# ✅ Handle missing values
-imputer = SimpleImputer(strategy="mean")
-df[["funding_total_usd", "funding_rounds", "company_age", "funding_gap"]] = imputer.fit_transform(
-    df[["funding_total_usd", "funding_rounds", "company_age", "funding_gap"]]
-)
+model.fit(X_train, y_train)
 
-# ✅ Compute Burn Rate & Growth Rate
-df["burn_rate"] = df["funding_total_usd"] / (df["company_age"] * 12)
-df["growth_rate"] = df["funding_rounds"] / df["company_age"]
-df["funding_stability"] = np.where(df["funding_gap"] < 365, 1, 0)
-
-# ✅ Selecting relevant features
-features = ["category_list", "funding_total_usd", "funding_rounds", "country_code", "company_age", "funding_gap", "burn_rate", "growth_rate", "funding_stability"]
-label = "status"
-
-# ✅ Convert categorical columns
-label_encoders = {}
-for col in ["category_list", "country_code", "status"]:
-    df[col] = df[col].astype(str)
-    le = LabelEncoder()
-    df[col] = le.fit_transform(df[col])
-    label_encoders[col] = le
-
-# ✅ Train the Model
-X_train, X_test, y_train, y_test = train_test_split(df[features], df[label], test_size=0.2, random_state=42)
-rf_model = RandomForestClassifier(n_estimators=200, max_depth=12, random_state=42)
-rf_model.fit(X_train, y_train)
-
-# ✅ Save model
-joblib.dump(rf_model, "random_forest_model.pkl")
-joblib.dump(imputer, "imputer.pkl")
-
-# ✅ API Endpoint
 @app.route("/predict", methods=["POST"])
-def predict_failure():
+def predict():
+    data = request.json
+    
     try:
-        data = request.json
-        print(request.json)
-        # Convert input to DataFrame
-        input_data = pd.DataFrame([data])
+        # Encode input data
+        input_data = pd.DataFrame({
+            col: [encoders[col].transform([data[col]])[0]]
+            for col in ["industry", "budget", "team_size", "market_size", "country"]
+        })
+    except ValueError as e:
+        return jsonify({"error": f"Invalid category in input: {str(e)}"}), 400
+    
+    # Predict probability
+    print(model.predict_proba(X_test[:5]))  # Check success vs. failure probabilities
 
-        # Ensure correct columns exist
-        required_columns = ["category_list", "funding_total_usd", "funding_rounds", "country_code", "company_age", "funding_gap"]
-        missing_keys = [col for col in required_columns if col not in input_data.columns]
-        if missing_keys:
-            return jsonify({"error": f"Missing keys: {', '.join(missing_keys)}"})
+    prob = model.predict_proba(input_data)[0]
+    success_rate = round(prob[1] * 100, 2)
+    failure_rate = round(prob[0] * 100, 2)
 
-        # Convert categorical features using stored LabelEncoders
-        # Convert categorical features using stored LabelEncoders
-        for col in label_encoders:
-            if col in input_data.columns:
-                if input_data[col][0] not in label_encoders[col].classes_:
-                    input_data[col] = label_encoders[col].transform([label_encoders[col].classes_[0]])[0]
-                else:
-                    input_data[col] = label_encoders[col].transform(input_data[col])
+    # Identify important risk factors
+    feature_importance = model.feature_importances_
+    feature_names = X.columns
+    sorted_indices = np.argsort(feature_importance)[::-1]
+    top_factors = [feature_names[i] for i in sorted_indices[:3]]  # Top 3 risk factors
 
-
-        # Convert numeric fields
-        input_data["funding_total_usd"] = pd.to_numeric(input_data["funding_total_usd"], errors="coerce")
-        input_data["funding_rounds"] = pd.to_numeric(input_data["funding_rounds"], errors="coerce")
-        input_data["company_age"] = pd.to_numeric(input_data["company_age"], errors="coerce")
-        input_data["funding_gap"] = pd.to_numeric(input_data["funding_gap"], errors="coerce")
-
-        # Handle missing values
-        input_data.fillna(0, inplace=True)
-
-        # ✅ Compute missing 'burn_rate' dynamically
-        input_data["burn_rate"] = input_data["funding_total_usd"] / (input_data["company_age"] * 12)
-        input_data["growth_rate"] = input_data["funding_rounds"] / input_data["company_age"]
-        input_data["funding_stability"] = np.where(input_data["funding_gap"] < 365, 1, 0)
-
-        # Load trained model
-        model = joblib.load("random_forest_model.pkl")
-
-        # Predict probabilities
-        prediction = model.predict_proba(input_data[features])[0]
-
-        # Correct probability assignment
-        failure_rate = round(prediction[0] * 100, 2)
-        success_rate = round(100 - failure_rate, 2)
-
-        # 📌 Improved Risk Factors Analysis
-        risk_factors = []
-        if input_data["company_age"].values[0] < 3:
-            risk_factors.append("Early-stage startup; ensure strong revenue model to attract investors.")
-        if input_data["funding_gap"].values[0] > 365 * 3:
-            risk_factors.append("Funding gap is long; securing the next round within 2 years is crucial.")
-        if input_data["funding_total_usd"].values[0] < 1000000:
-            risk_factors.append("Moderate funding history; ensure strong revenue growth for investor confidence.")
-        if input_data["funding_rounds"].values[0] < 2:
-            risk_factors.append("Limited funding rounds; demonstrating sustainable growth is important.")
-        if input_data["burn_rate"].values[0] > 50000:
-            risk_factors.append("Monitor burn rate to avoid early fund depletion; optimize cost structure.")
-        if input_data["growth_rate"].values[0] < 0.5:
-            risk_factors.append("Slow growth rate; competitive market risk exists, continuous innovation is key.")
-        if input_data["funding_stability"].values[0] == 1:
-            risk_factors.append("Funding gap is stable, but maintaining consistent growth is necessary.")
-        print("Risk Factors Generated:", risk_factors)
-
-        # Final Response
-        response = {
-            "failure_rate": failure_rate,
-            "risk_factors": risk_factors,
-            "success_rate": success_rate
+    # Explain the risk factors based on input data
+    risk_messages = {
+        "industry": {
+            "Technology & SaaS": "High competition in tech startups, requiring strong differentiation.",
+            "Healthcare & Biotech": "Regulatory hurdles and long R&D cycles increase risk.",
+            "Fintech & Finance": "Strict financial regulations and trust-building challenges.",
+            "E-commerce & Retail": "Heavy marketing costs and logistics complexity.",
+            "Education & EdTech": "Slow adoption rates and high content creation costs.",
+            "Food & Beverage": "Perishable inventory and supply chain challenges.",
+            "Transportation & Logistics": "High operational costs and regulatory issues.",
+            "Real Estate & PropTech": "Market fluctuations and high capital investment risks.",
+            "Media & Entertainment": "Changing consumer trends and monetization challenges.",
+            "Energy & CleanTech": "High infrastructure costs and long ROI periods.",
+            "Manufacturing": "Large upfront investment and supply chain dependencies.",
+            "Other": "Unclear industry risks due to undefined category."
+        },
+        "budget": {
+            "bootstrap": "Limited funds may slow growth and limit scalability.",
+            "seed": "Early-stage funding is unstable and might not last long.",
+            "angel": "Depends on investors' risk appetite, which may change.",
+            "series_a": "Pressure to scale rapidly, which may lead to burnout.",
+            "series_b": "Investor expectations for high revenue growth.",
+            "series_c": "High valuation pressure; failure to grow fast can be risky."
+        },
+        "team_size": {
+            "solo": "Single founder startups struggle with workload and decision-making.",
+            "small": "Limited manpower can slow execution speed.",
+            "medium": "Risk of inefficiency due to growing team coordination challenges.",
+            "large": "High operational costs and possible leadership conflicts.",
+            "enterprise": "Bureaucracy may slow innovation and agility."
+        },
+        "market_size": {
+            "niche": "Small customer base; harder to scale.",
+            "medium": "Competition from both small and large players.",
+            "large": "Crowded market; requires strong differentiation.",
+            "massive": "High potential but extremely competitive."
+        },
+        "country": {
+            "in": "Regulatory complexity and evolving startup ecosystem.",
+            "us": "High competition and expensive talent pool.",
+            "uk": "Strict business laws and Brexit-related uncertainties.",
+            "ca": "Limited domestic market size.",
+            "au": "Distant global markets; high operational costs.",
+            "de": "Strict labor laws and high operational costs.",
+            "fr": "Bureaucratic hurdles for business operations.",
+            "jp": "Cultural challenges in startup adoption.",
+            "sg": "Favorable business climate but small market size.",
+            "br": "Economic instability and complex tax system."
         }
+    }
 
-        return jsonify(response)
+    risk_explanations = [
+        risk_messages[factor].get(data[factor], "No specific risk identified.") 
+        for factor in top_factors
+    ]
 
-    except Exception as e:
-        return jsonify({"error": str(e)})
+    return jsonify({
+        "success_rate": f"{success_rate}%",
+        "failure_rate": f"{failure_rate}%",
+        "risk_factors": risk_explanations
+    })
 
-# ✅ Run Flask app
 if __name__ == "__main__":
     app.run(debug=True)
+

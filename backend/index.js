@@ -1,8 +1,5 @@
 import express from "express";
-import axios from "axios";
 import cors from "cors";
-import dotenv from "dotenv";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
   conversations,
   fetchLegalComplianceData,
@@ -14,13 +11,9 @@ import {
   getFailurePrediction,
 } from "./lib/utils.js";
 
-dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cors());
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 // Endpoint to generate a startup roadmap
 app.post("/api/generate-roadmap", async (req, res) => {
@@ -66,16 +59,14 @@ app.post("/api/task-guidance", async (req, res) => {
 
 app.post("/api/failure-prediction", async (req, res) => {
   try {
-    const { businessIdea, industry, investment, targetMarket } = req.body;
+   const{ industry,
+    budget,
+    teamSize,
+    marketSize,
+    country}= req.body;
 
     // Call the utility function to process failure prediction
-    const result = await getFailurePrediction(
-      businessIdea,
-      industry,
-      investment,
-      targetMarket,
-      model
-    );
+    const result = await getFailurePrediction(industry, budget, teamSize, marketSize, country);
 
    return res.json(result);
   } catch (error) {
@@ -90,7 +81,7 @@ app.post("/api/failure-prediction", async (req, res) => {
 
 //Enpoint to competitor analysis
 
-app.post("/api/analyze/swot", async (req, res) => {
+app.post("/api/swot-analysis", async (req, res) => {
   try {
     const { startupData } = req.body;
 
@@ -114,12 +105,13 @@ app.post("/api/analyze/swot", async (req, res) => {
 
 app.post("/api/checklist", async (req, res) => {
   const {
-    country,
-    region,
+   
     industry,
     budget,
     teamSize,
     targetMarket,
+    country,
+    region,
     problemStatement,
     targetCustomer,
     uniqueValueProposition,
@@ -187,7 +179,7 @@ app.post("/api/checklist/:itemId/details", async (req, res) => {
 // Endpoint to process a question and get mentor advice
 app.post("/api/mentor/ask", async (req, res) => {
   try {
-    const { sessionId, message } = req.body;
+    const { sessionId, message,formData } = req.body;
 
     if (!sessionId || !message) {
       return res.status(400).json({
@@ -195,7 +187,7 @@ app.post("/api/mentor/ask", async (req, res) => {
       });
     }
 
-    const response = await processQuestion(sessionId, message);
+    const response = await processQuestion(sessionId, message,formData);
     return res.json(response);
   } catch (error) {
     return res.status(500).json({

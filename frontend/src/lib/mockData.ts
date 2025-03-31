@@ -1,3 +1,5 @@
+import { FormData } from "./types";
+
 // Startup Industries
 export const industries = [
   { value: "Technology & SaaS", label: "Technology & SaaS" },
@@ -16,12 +18,12 @@ export const industries = [
 
 // Budget Ranges
 export const budgetRanges = [
-  { value: "bootstrap", label: "Bootstrapped (< $10,000)" },
-  { value: "seed", label: "Seed ($10,000 - $100,000)" },
-  { value: "angel", label: "Angel ($100,000 - $500,000)" },
-  { value: "series_a", label: "Series A ($500,000 - $2 million)" },
-  { value: "series_b", label: "Series B ($2 million - $10 million)" },
-  { value: "series_c", label: "Series C+ ($10 million+)" }
+  { value: "bootstrap", label: "Bootstrapped (< ₹10,000)" },
+  { value: "seed", label: "Seed ($10,000 - ₹100,000)" },
+  { value: "angel", label: "Angel ($100,000 - ₹500,000)" },
+  { value: "series_a", label: "Series A (₹500,000 - ₹2 million)" },
+  { value: "series_b", label: "Series B (₹2 million - ₹10 million)" },
+  { value: "series_c", label: "Series C+ (₹10 million+)" }
 ];
 
 // Team Sizes
@@ -35,11 +37,137 @@ export const teamSizes = [
 
 // Market Sizes
 export const marketSizes = [
-  { value: "niche", label: "Niche Market (< $1 billion)" },
-  { value: "medium", label: "Medium Market ($1-10 billion)" },
-  { value: "large", label: "Large Market ($10-100 billion)" },
-  { value: "massive", label: "Massive Market ($100 billion+)" }
+  { value: "niche", label: "Niche Market (< ₹1 million)" },
+  { value: "medium", label: "Medium Market (₹1-10 million)" },
+  { value: "large", label: "Large Market (₹10-100 million)" },
+  { value: "massive", label: "Massive Market (₹100 million+)" }
 ];
+
+
+// Sample data for countries and regions
+export const countries = [
+  { value: 'india', label: 'India' },
+  { value: 'united_states', label: 'United States' },
+  { value: 'united_kingdom', label: 'United Kingdom' },
+  { value: 'canada', label: 'Canada' },
+  { value: 'australia', label: 'Australia' },
+  { value: 'germany', label: 'Germany' },
+  { value: 'france', label: 'France' },
+  { value: 'japan', label: 'Japan' },
+  { value: 'singapore', label: 'Singapore' },
+  { value: 'brazil', label: 'Brazil' },
+];
+
+// Regions will be dynamically populated based on the selected country
+export const regionsByCountry: Record<string, Array<{ value: string; label: string }>> = {
+  united_states: [
+    { value: 'northeast', label: 'Northeast' },
+    { value: 'midwest', label: 'Midwest' },
+    { value: 'south', label: 'South' },
+    { value: 'west', label: 'West' },
+  ],
+  united_kingdom: [
+    { value: 'england', label: 'England' },
+    { value: 'scotland', label: 'Scotland' },
+    { value: 'wales', label: 'Wales' },
+    { value: 'northern-ireland', label: 'Northern Ireland' },
+  ],
+  canada: [
+    { value: 'ontario', label: 'Ontario' },
+    { value: 'quebec', label: 'Quebec' },
+    { value: 'british-columbia', label: 'British Columbia' },
+    { value: 'alberta', label: 'Alberta' },
+  ],
+  australia: [
+    { value: 'nsw', label: 'New South Wales' },
+    { value: 'vic', label: 'Victoria' },
+    { value: 'qld', label: 'Queensland' },
+    { value: 'wa', label: 'Western Australia' },
+  ],
+  germany: [
+    { value: 'bayern', label: 'Bavaria' },
+    { value: 'berlin', label: 'Berlin' },
+    { value: 'hamburg', label: 'Hamburg' },
+    { value: 'hessen', label: 'Hesse' },
+  ],
+  france: [
+    { value: 'ile-de-france', label: 'Île-de-France' },
+    { value: 'provence', label: 'Provence-Alpes-Côte d\'Azur' },
+    { value: 'aquitaine', label: 'Nouvelle-Aquitaine' },
+    { value: 'auvergne', label: 'Auvergne-Rhône-Alpes' },
+  ],
+  japan: [
+    { value: 'kanto', label: 'Kanto' },
+    { value: 'kansai', label: 'Kansai' },
+    { value: 'chubu', label: 'Chubu' },
+    { value: 'hokkaido', label: 'Hokkaido' },
+  ],
+  singapore: [
+    { value: 'central', label: 'Central Region' },
+    { value: 'east', label: 'East Region' },
+    { value: 'north', label: 'North Region' },
+    { value: 'west', label: 'West Region' },
+  ],
+  india: [
+    { value: 'chennai', label: 'Tamil Nadu' },
+    { value: 'delhi', label: 'Delhi' },
+    { value: 'mumbai', label: 'Maharashtra' },
+    { value: 'bangalore', label: 'Karnataka' },
+    { value: 'hyderabad', label: 'Telangana' },
+    { value: 'kolkata', label: 'West Bengal' },
+    { value: 'ahmedabad', label: 'Gujarat' },
+    { value: 'lucknow', label: 'Uttar Pradesh' },
+    { value: 'jaipur', label: 'Rajasthan' },
+    { value: 'chandigarh', label: 'Punjab' },
+    { value: 'bhopal', label: 'Madhya Pradesh' },
+    { value: 'patna', label: 'Bihar' },
+    { value: 'guwahati', label: 'Assam' },
+    { value: 'bhubaneswar', label: 'Odisha' },
+    { value: 'thiruvananthapuram', label: 'Kerala' },
+    { value: 'raipur', label: 'Chhattisgarh' },
+    { value: 'ranchi', label: 'Jharkhand' },
+    { value: 'dehradun', label: 'Uttarakhand' },
+    { value: 'shimla', label: 'Himachal Pradesh' },
+    { value: 'srinagar', label: 'Jammu & Kashmir' },
+    { value: 'gangtok', label: 'Sikkim' },
+    { value: 'aizawl', label: 'Mizoram' },
+    { value: 'kohima', label: 'Nagaland' },
+    { value: 'shillong', label: 'Meghalaya' },
+    { value: 'agartala', label: 'Tripura' },
+    { value: 'itanagar', label: 'Arunachal Pradesh' },
+    { value: 'panaji', label: 'Goa' },
+    { value: 'silvassa', label: 'Dadra & Nagar Haveli' },
+    { value: 'daman', label: 'Daman & Diu' },
+    { value: 'kavaratti', label: 'Lakshadweep' },
+    { value: 'port-blair', label: 'Andaman & Nicobar Islands' },
+    { value: 'puducherry', label: 'Puducherry' },
+    { value: 'andhra-pradesh', label: 'Andhra Pradesh' },
+    { value: 'ladakh', label: 'Ladakh' },
+  ],
+  brazil: [
+    { value: 'sao-paulo', label: 'São Paulo' },
+    { value: 'rio-de-janeiro', label: 'Rio de Janeiro' },
+    { value: 'minas-gerais', label: 'Minas Gerais' },
+    { value: 'bahia', label: 'Bahia' },
+  ],
+};
+
+
+export const defaultFormData: FormData = {
+  industry: '',
+  budget: '',
+  teamSize: '',
+  marketSize: '',
+  problemStatement: 'In IT companies, lunch hour leads to overcrowded cafeterias, long food queues, and inefficient seating arrangements, causing delays and discomfort for employees.',
+  targetCustomer: 'IT Companies & Corporate Offices – HR and facility managers looking to improve cafeteria efficiency. Cafeteria Vendors & Catering Services – Businesses managing food distribution in corporate spaces. Workforce Employees – IT professionals facing long wait times and seating issues during lunch hours.',
+  uniqueValueProposition: 'AI-powered smart cafeteria management system that reduces wait times, optimizes seating, and enhances employee dining experience through real-time queue tracking, pre-ordering, and dynamic seat allocation.',
+  competitors: '',
+  goToMarketStrategy: '',
+  revenueModel: '',
+  country: '',
+  region: '',
+};
+
 
 // Mock Roadmap Data
 export const mockRoadmap = {

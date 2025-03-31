@@ -1,12 +1,10 @@
-// Gemini API Integration for Legal Compliance Checklist
-// This module handles fetching both checklist metadata and detailed compliance data
-
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 import axios from "axios";
 dotenv.config();
+
 // Initialize the Gemini API client
-const API_KEY = process.env.GEMINI_API_KEY; // Replace with your actual API key
+const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
@@ -151,7 +149,7 @@ async function generateRoadmapTaskGuidance(taskTitle, formData) {
   Ensure:
   Generate a structured JSON response in this format:
   {
-    "${taskTitle}": {
+    "explaination": {
       "taskTitle": "Short and clear title",
       "whyThisMatters": "Concise explanation of importance.",
       "howToDoItRight": [
@@ -200,23 +198,23 @@ async function generateRoadmapTaskGuidance(taskTitle, formData) {
 }
 
 //failure prediction util functions
-// const PYTHON_SERVER_URL = "http://127.0.0.1:5000/predict"; // Replace with actual URL
+
 
 async function getFailurePrediction(
-  businessIdea,
   industry,
-  investment,
-  targetMarket
+      budget,
+      teamSize,
+      marketSize,
+      country
 ) {
   try {
     // 🔹 Step 1: Prepare Data for Flask API
     const requestData = {
-      category_list: industry || "Unknown",
-      funding_total_usd: String(investment), // Ensure it's a string
-      funding_rounds: "3",
-      country_code: "US",
-      company_age: 5,
-      funding_gap: 730,
+      industry: industry || "Unknown",
+      budget: String(budget), // Ensure it's a string
+      team_size: teamSize,
+      market_size: marketSize,
+      country: `${country}`,
     };
     // console.log("Request Data Sent to Python:", requestData);
 
@@ -237,10 +235,12 @@ async function getFailurePrediction(
     // 🔹 Step 3: Prepare Prompt for Gemini AI
     const prompt = `Based on the given startup data:
     
-    Business Idea: ${businessIdea}
+   
     Industry: ${industry}
-    Target Market: ${targetMarket}
-    Investment: ${investment}
+    Target Market size: ${marketSize}
+    budgetRange: ${budget}
+    teamSize: ${teamSize}
+    country: ${country}
 
     Here is the failure risk data from our ML model:
     ${JSON.stringify(flaskResponse.data)}
@@ -298,35 +298,18 @@ async function getFailurePrediction(
 }
 
 //competitor analysis utils
-
-// Assume this is added to your existing app.js file
-
 // Generate a SWOT analysis based on startup profile data
 
 async function generateSWOTAnalysis(startupData) {
   try {
-    // 1. Enrich the data with industry benchmarks and statistics
-    const enrichedData = await enrichWithIndustryData(startupData);
-
-    // 2. Create a specialized prompt for the AI that focuses on concrete analysis
-    const prompt = createSWOTPrompt(enrichedData);
-
-    // 3. Generate the analysis using Gemini
-
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const analysis = response.text();
-
-    // 4. Extract structured SWOT data from the response
-    const structuredAnalysis = parseAnalysisResponse(analysis);
-
-    // 5. Add competitor insights
+   
+    // 1. Add competitor insights
     const competitors = await identifyCompetitors(startupData);
 
     return {
-      swot: structuredAnalysis,
+     
       competitors: competitors,
-      fullAnalysis: analysis,
+   
     };
   } catch (error) {
     console.error("Error generating SWOT analysis:", error);
@@ -334,155 +317,7 @@ async function generateSWOTAnalysis(startupData) {
   }
 }
 
-/**
- * Enrich startup data with industry statistics and benchmarks
- * @param {Object} startupData - Basic startup profile
- * @returns {Promise<Object>} Enriched data with market insights
- */
-async function enrichWithIndustryData(startupData) {
-  // This would connect to real data sources in production
-  // For MVP, you can use publicly available APIs or create a curated database
 
-  try {
-    // Example: Get industry growth rates from a market research API
-    // Replace with your actual data source
-    const industryStats = await fetchIndustryStats(startupData.industry);
-
-    // Get region-specific business environment data
-    const regionalData = await fetchRegionalData(
-      startupData.country,
-      startupData.region
-    );
-
-    // Get funding trends for similar startups
-    const fundingTrends = await fetchFundingTrends(
-      startupData.industry,
-      startupData.stage
-    );
-
-    return {
-      ...startupData,
-      industryStats,
-      regionalData,
-      fundingTrends,
-    };
-  } catch (error) {
-    console.error("Error enriching data:", error);
-    // Fall back to basic data if enrichment fails
-    return startupData;
-  }
-}
-
-/**
- * Create a specialized prompt for SWOT analysis
- * @param {Object} enrichedData - Startup data with industry benchmarks
- * @returns {string} Detailed prompt for the AI
- */
-function createSWOTPrompt(enrichedData) {
-  return `
-      You are an expert startup analyst with deep knowledge of the ${
-        enrichedData.industry
-      } industry.
-      
-      TASK: Generate a detailed, fact-based SWOT analysis for a startup with the following profile:
-      
-      STARTUP PROFILE:
-      - Industry: ${enrichedData.industry}
-      - Budget Range: ${enrichedData.budgetRange}
-      - Team Size: ${enrichedData.teamSize}
-      - Target Market: ${enrichedData.targetMarketSize}
-      - Location: ${enrichedData.country}, ${enrichedData.region}
-      - Problem Statement: ${enrichedData.problemStatement}
-      - Target Customer: ${enrichedData.targetCustomer}
-      - Unique Value Proposition: ${enrichedData.uniqueValueProposition}
-      
-      INDUSTRY CONTEXT:
-      ${JSON.stringify(enrichedData.industryStats, null, 2)}
-      
-      REGIONAL BUSINESS ENVIRONMENT:
-      ${JSON.stringify(enrichedData.regionalData, null, 2)}
-      
-      FUNDING LANDSCAPE:
-      ${JSON.stringify(enrichedData.fundingTrends, null, 2)}
-      
-      IMPORTANT INSTRUCTIONS:
-      1. Base your analysis ONLY on the provided data and verifiable industry facts
-      2. Identify SPECIFIC strengths, weaknesses, opportunities and threats - not generic statements
-      3. Reference actual market conditions, competitors and trends in ${
-        enrichedData.industry
-      }
-      4. For each point, provide a brief explanation of its business impact
-      5. Include quantitative metrics whenever possible
-      6. Focus on actionable insights relevant to ${
-        enrichedData.country
-      } and specifically ${enrichedData.region}
-      7. Include 5-7 points for each SWOT category, ordered by importance
-      
-      FORMAT YOUR RESPONSE AS JSON:
-      {
-        "strengths": [
-          {"point": "Strength 1", "impact": "Business impact", "evidence": "Supporting evidence"},
-          ...
-        ],
-        "weaknesses": [...],
-        "opportunities": [...],
-        "threats": [...]
-      }
-    `;
-}
-
-/**
- * Parse and structure the AI-generated SWOT analysis
- * @param {string} analysisText - Raw text from the AI
- * @returns {Object} Structured SWOT data
- */
-function parseAnalysisResponse(analysisText) {
-  try {
-    // Extract JSON from response
-    const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-
-    // Fallback parsing if JSON extraction fails
-    const sections = {
-      strengths: [],
-      weaknesses: [],
-      opportunities: [],
-      threats: [],
-    };
-
-    // Simple parsing logic - would be more robust in production
-    let currentSection = null;
-
-    analysisText.split("\n").forEach((line) => {
-      if (line.toLowerCase().includes("strengths")) {
-        currentSection = "strengths";
-      } else if (line.toLowerCase().includes("weaknesses")) {
-        currentSection = "weaknesses";
-      } else if (line.toLowerCase().includes("opportunities")) {
-        currentSection = "opportunities";
-      } else if (line.toLowerCase().includes("threats")) {
-        currentSection = "threats";
-      } else if (currentSection && line.trim() && line.match(/^\d+\.|^\-|\*/)) {
-        // Format bullet points into structured data
-        const point = line.replace(/^\d+\.|\-|\*/, "").trim();
-        if (point) {
-          sections[currentSection].push({
-            point: point,
-            impact: "Impact analysis not available in non-JSON format",
-            evidence: "Supporting data not available in non-JSON format",
-          });
-        }
-      }
-    });
-
-    return sections;
-  } catch (error) {
-    console.error("Error parsing analysis response:", error);
-    throw new Error("Failed to parse SWOT analysis");
-  }
-}
 
 /**
  * Identify relevant competitors based on startup profile
@@ -510,6 +345,8 @@ async function identifyCompetitors(startupData) {
         3. Key differentiators
         4. Strengths relative to this startup
         5. Weaknesses relative to this startup
+        6. Threats relative to this startup
+        7. Opportunities relative to this startup
         6. Approximate market share or size if available
         
         Format as JSON array:
@@ -520,13 +357,18 @@ async function identifyCompetitors(startupData) {
             "differentiators": ["diff1", "diff2"],
             "strengths": ["strength1", "strength2"],
             "weaknesses": ["weakness1", "weakness2"],
-            "marketShare": "estimate or N/A"
+            "opportunities": ["opportunity1 for this market", "opportunity2 for this market"]
+            "threats": ["threat1 for this market", "threat2 for this market"],
+            "marketShare": "estimate or N/A",
           },
           ...
         ]
         
         IMPORTANT: Only include REAL companies that actually exist in this market.
         Verify that each competitor is active in ${startupData.country} or serves this market remotely.
+
+        Ensure:
+         -Strictly give JSON response format
       `;
 
     // Generate competitor analysis
@@ -573,59 +415,7 @@ async function verifyCompetitorData(competitors) {
   });
 }
 
-// Sample placeholder functions for data fetching
-// Replace with actual API integrations in production
-async function fetchIndustryStats(industry) {
-  // Placeholder - connect to real data source in production
-  // console.log("Fetching industry stats for", industry);
 
-  const industryData = {
-    growthRate: "14.5%",
-    averageFundingRound: "$2.1M",
-    keyPlayers: ["Company A", "Company B", "Company C"],
-    trendsToWatch: [
-      "AI integration",
-      "Subscription models",
-      "Remote-first operations",
-    ],
-    challenges: [
-      "Talent acquisition",
-      "Regulatory changes",
-      "Market saturation",
-    ],
-  };
-
-  return industryData;
-}
-
-async function fetchRegionalData(country, region) {
-  // Placeholder - connect to real data source in production
-  // For India/Tamil Nadu example
-  const regionalData = {
-    techHubs: ["Chennai", "Coimbatore", "Madurai"],
-    governmentInitiatives: ["Startup TN", "TANSTIA"],
-    fundingAvailability: "Medium",
-    talentPool: "Large technical talent pool, especially in IT/software",
-    costOfOperation: "30% lower than Bangalore",
-    regulatoryEnvironment: "Favorable with recent startup-friendly policies",
-  };
-
-  return regionalData;
-}
-
-async function fetchFundingTrends(industry, stage) {
-  // Placeholder - connect to real data source in production
-  const fundingData = {
-    averagePreSeed: "$150K-$300K",
-    averageSeed: "$1M-$2M",
-    averageSeriesA: "$5M-$10M",
-    activeInvestors: ["Investor A", "Investor B", "Investor C"],
-    valuationMultiples: "5-7x ARR",
-    burnRateAverage: "$50K-$100K/month",
-  };
-
-  return fundingData;
-}
 
 //Legal compliance checklist utils functions
 async function fetchLegalChecklistItems(
@@ -653,10 +443,14 @@ async function fetchLegalChecklistItems(
         {
           "id": "item-id-in-kebab-case",
           "title": "Human readable title",
-          "description": "Brief description of what this requirement entails",
+          "completed": false,
+          "details": "Brief description of what this requirement entails",
           "priority": "high/medium/low"
         }
       ]
+
+      Ensure:
+       -Strictly Json format
     `;
 
     const result = await model.generateContent(prompt);
@@ -675,6 +469,7 @@ async function fetchLegalChecklistItems(
   }
 }
 
+
 async function fetchLegalComplianceData(
   checklistItemId,
   country,
@@ -689,47 +484,71 @@ async function fetchLegalComplianceData(
 ) {
   try {
     const prompt = `
-      Provide detailed compliance information for ${checklistItemId} in ${region}, ${country} for a ${industry} startup.
-      The startup has a budget of ${budget}, a team size of ${teamSize}, and targets a ${targetMarket} market.
-      Problem Statement: ${problemStatement}
-      Target Customer: ${targetCustomer}
-      Unique Value Proposition: ${uniqueValueProposition}
-      
-      Format the response as a JSON object with the following structure:
-      {
-        "locationContent": {
-          "${country}": {
-            "${region}": {
-              "what": "Clear explanation of what this requirement is",
-              "why": "Importance and consequences of non-compliance",
-              "how": ["Step 1", "Step 2", "Step 3"],
-              "timeline": "Expected completion time",
-              "cost": "Range of costs",
-              "resources": [{"title": "Resource 1", "url": "https://example.com"}],
-              "documents": ["Document 1", "Document 2"]
-            }
-          }
+    Generate a **detailed compliance guide** for **${checklistItemId}** in **${region}, ${country}**, specifically for a **${industry}** startup.  
+    The startup has a **budget of ${budget}**, a **team size of ${teamSize}**, and is targeting a **${targetMarket}** market.  
+  
+    **Key Business Details:**  
+    - **Problem Statement:** ${problemStatement}  
+    - **Target Customer:** ${targetCustomer}  
+    - **Unique Value Proposition:** ${uniqueValueProposition}  
+  
+    **Response Format (Strict JSON Structure):**  
+    {
+      "what": "A **clear and precise** explanation of what **${checklistItemId}** is and its relevance to this startup.",
+      "why": "Why **${checklistItemId}** is **crucial**, its **legal importance**, and the **risks/consequences of non-compliance** (e.g., fines, lawsuits, operational risks).",
+      "how": [
+        "Step 1: **Clear action point** with official sources if available.",
+        "Step 2: **Detailed yet concise steps** in startup-friendly language.",
+        "Step 3: **Important considerations, approvals, or verifications needed**."
+      ],
+      "timeline": "Estimated **timeframe** for compliance, including potential delays and dependencies.",
+      "cost": "Breakdown of **costs** (e.g., registration fees, legal consultation, additional expenses).",
+      "resources": [
+        {
+          "title": "Official Government Website",
+          "url": "https://example.com"
+        },
+        {
+          "title": "Trusted Legal Advisory Resource",
+          "url": "https://example.com"
         }
-      }
-    `;
+      ],
+      "documents": [
+        "**Mandatory** documents required for compliance.",
+        "Any **additional paperwork** that may be needed."
+      ]
+    }
+  
+    **Important Guidelines:**  
+    - **Strictly provide** information **only related to ${checklistItemId}**.  
+    - **Ensure accuracy** and refer to **official laws/regulations** where applicable.  
+    - **Avoid unnecessary details** that do not fit the JSON format.  
+    - **No filler content**—keep it relevant, practical, and **actionable**.  
+  `;  
+  
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
 
+    // Extract JSON from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("Failed to extract JSON from Gemini response");
     }
 
-    return JSON.parse(jsonMatch[0]);
+    const complianceData = JSON.parse(jsonMatch[0]);
+
+    // Ensure the returned data matches frontend expectations
+    return {
+      title: checklistItemId, // Add title since frontend expects it
+      ...complianceData, // Directly return structured data
+    };
   } catch (error) {
     console.error("Error fetching compliance data:", error);
     throw error;
   }
 }
-
-//* Merges basic checklist item with its detailed location-specific content
 
 function mergeChecklistData(checklistItem, complianceData) {
   return {
@@ -744,12 +563,12 @@ export const conversations = {};
 
 // Generate system instructions for the AI Mentor
 
-function getSystemInstructions() {
+function getSystemInstructions(formData) {
   return `
     You are an AI Mentor specialized in providing guidance to startup founders and entrepreneurs.
     
     IMPORTANT RULES:
-    1. Only provide information related to business, startups, entrepreneurship, and legal compliance.
+    1. Only provide information related to business ${formData.budgetRange},${formData.teamSize},${formData.targetMarketSize},${formData.country},${formData.region},${formData.problemStatement},${formData.targetCustomer},${formData.uniqueValueProposition}.
     2. Do not discuss topics unrelated to business or startups.
     3. Keep responses concise, practical, and actionable.
     4. For legal questions, emphasize that you're providing general guidance and recommend consulting with legal professionals.
@@ -757,7 +576,7 @@ function getSystemInstructions() {
     6. If asked about something outside your expertise, politely redirect to business topics.
     7. Avoid political opinions, personal advice unrelated to business, or controversial topics.
     8. Focus on providing value to early-stage entrepreneurs with clear, actionable steps.
-    
+    9.always remember our ${formData.budgetRange},${formData.teamSize},${formData.targetMarketSize},${formData.country},${formData.region},${formData.problemStatement},${formData.targetCustomer},${formData.uniqueValueProposition} and give detailed guidance.
     RESPONSE FORMAT:
     - Keep responses under 250 words unless detailed explanation is specifically requested
     - Use bullet points for steps or lists
@@ -768,8 +587,9 @@ function getSystemInstructions() {
 
 //Create a prompt that includes system instructions and conversation history
 
-function createPrompt(userMessage, history = []) {
-  const systemInstructions = getSystemInstructions();
+function createPrompt(userMessage, history = [],formData) {
+ 
+  const systemInstructions = getSystemInstructions(formData);
 
   let prompt = `${systemInstructions}\n\nConversation history:\n`;
 
@@ -787,7 +607,7 @@ function createPrompt(userMessage, history = []) {
 
 // Process startup-related questions and provide mentorship
 
-async function processQuestion(sessionId, message) {
+async function processQuestion(sessionId, message,formData) {
   try {
     // Initialize conversation history if it doesn't exist
     if (!conversations[sessionId]) {
@@ -801,7 +621,7 @@ async function processQuestion(sessionId, message) {
     });
 
     // Create prompt with system instructions and history
-    const prompt = createPrompt(message, conversations[sessionId]);
+    const prompt = createPrompt(message, conversations[sessionId],formData);
 
     // Generate content with Gemini
     const result = await model.generateContent(prompt);

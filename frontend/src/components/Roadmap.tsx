@@ -1,28 +1,22 @@
 
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {  useNavigate } from 'react-router-dom';
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Check, Clock, Calendar, ChevronRight } from 'lucide-react';
-import { mockRoadmap } from '@/lib/mockData';
+import {  Clock, Calendar, ChevronRight } from 'lucide-react';
+
 
 const Roadmap = () => {
   const navigate = useNavigate();
   const [activePhase, setActivePhase] = useState('0');
   const [checkedSteps, setCheckedSteps] = useState<{ [key: string]: boolean }>({});
-  
-  // // Use tech roadmap as default
-  // const location = useLocation();
-  // const roadmapData = location.state?.roadmapData;
-  // console.log("Roadmap Data:", window.localStorage.getItem("roadmap"));
+
   const roadmapData = JSON.parse(window.localStorage.getItem("roadmap") || '{}');
-  console.log( roadmapData);
-  
-  const roadmap = mockRoadmap.tech;
-  
+
+
   const handleStepToggle = (phaseIndex: number, stepIndex: number) => {
     const key = `${phaseIndex}-${stepIndex}`;
     setCheckedSteps(prev => ({
@@ -32,23 +26,36 @@ const Roadmap = () => {
   };
   
   const getPhaseProgress = (phaseIndex: number) => {
-    const phase = roadmap.phases[phaseIndex];
+    const phase = roadmapData.phases[phaseIndex].tasks;
+   
+    
     let completedSteps = 0;
     
-    phase.steps.forEach((_, stepIndex) => {
+    phase.forEach((_, stepIndex) => {
       const key = `${phaseIndex}-${stepIndex}`;
       if (checkedSteps[key]) {
         completedSteps++;
       }
     });
     
-    return Math.round((completedSteps / phase.steps.length) * 100);
+    return Math.round((completedSteps / phase.length) * 100);
   };
   
-  const handleStepClick = (phaseIndex: number, stepIndex: number, title: string) => {
+  const handleStepClick = (taskTitle: string) => {
     // Encode the title for URL
-    const encodedTitle = encodeURIComponent(title);
-    navigate(`/checklist-item/${phaseIndex}/${stepIndex}/${encodedTitle}`);
+   
+    try {
+      const encodedTitle = encodeURIComponent(taskTitle);
+     
+  navigate(`/checklist-item/${encodedTitle}`);
+        
+    } catch (error) {
+      
+    }
+
+ 
+    
+    
   };
   
   return (
@@ -132,7 +139,7 @@ const Roadmap = () => {
                         variant="ghost" 
                         size="sm" 
                         className="ml-2 p-1 h-auto"
-                        onClick={() => handleStepClick(phaseIndex, stepIndex, step.title)}
+                        onClick={() => handleStepClick(step.title)}
                       >
                         <ChevronRight className="h-4 w-4" />
                         <span className="sr-only">View details</span>

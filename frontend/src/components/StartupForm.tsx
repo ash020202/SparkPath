@@ -1,124 +1,16 @@
-import { useEffect, useState } from 'react';
+import {  useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Building, DollarSign, Users, BarChart, Lightbulb, Target, Zap, TrendingUp, LineChart, Globe, MapPin } from 'lucide-react';
+import { ArrowRight, Building,Lightbulb, Globe, MapPin } from 'lucide-react';
 import { useFormContext } from '@/context/FormContext';
-import { industries, budgetRanges, teamSizes, marketSizes } from '@/lib/mockData';
-import { generateRoadmap } from '@/lib/action';
+import { industries, budgetRanges, teamSizes, marketSizes, regionsByCountry, countries } from '@/lib/mockData';
+import { generateFailurePrediction, generateLegalChecklist, generateRoadmap, generateSWOTAnalysis } from '@/lib/action';
 
-// Sample data for countries and regions
-const countries = [
-  { value: 'us', label: 'United States' },
-  { value: 'uk', label: 'United Kingdom' },
-  { value: 'ca', label: 'Canada' },
-  { value: 'au', label: 'Australia' },
-  { value: 'de', label: 'Germany' },
-  { value: 'fr', label: 'France' },
-  { value: 'jp', label: 'Japan' },
-  { value: 'sg', label: 'Singapore' },
-  { value: 'in', label: 'India' },
-  { value: 'br', label: 'Brazil' },
-];
-
-// Regions will be dynamically populated based on the selected country
-const regionsByCountry: Record<string, Array<{ value: string; label: string }>> = {
-  us: [
-    { value: 'northeast', label: 'Northeast' },
-    { value: 'midwest', label: 'Midwest' },
-    { value: 'south', label: 'South' },
-    { value: 'west', label: 'West' },
-  ],
-  uk: [
-    { value: 'england', label: 'England' },
-    { value: 'scotland', label: 'Scotland' },
-    { value: 'wales', label: 'Wales' },
-    { value: 'northern-ireland', label: 'Northern Ireland' },
-  ],
-  ca: [
-    { value: 'ontario', label: 'Ontario' },
-    { value: 'quebec', label: 'Quebec' },
-    { value: 'british-columbia', label: 'British Columbia' },
-    { value: 'alberta', label: 'Alberta' },
-  ],
-  au: [
-    { value: 'nsw', label: 'New South Wales' },
-    { value: 'vic', label: 'Victoria' },
-    { value: 'qld', label: 'Queensland' },
-    { value: 'wa', label: 'Western Australia' },
-  ],
-  de: [
-    { value: 'bayern', label: 'Bavaria' },
-    { value: 'berlin', label: 'Berlin' },
-    { value: 'hamburg', label: 'Hamburg' },
-    { value: 'hessen', label: 'Hesse' },
-  ],
-  fr: [
-    { value: 'ile-de-france', label: 'Île-de-France' },
-    { value: 'provence', label: 'Provence-Alpes-Côte d\'Azur' },
-    { value: 'aquitaine', label: 'Nouvelle-Aquitaine' },
-    { value: 'auvergne', label: 'Auvergne-Rhône-Alpes' },
-  ],
-  jp: [
-    { value: 'kanto', label: 'Kanto' },
-    { value: 'kansai', label: 'Kansai' },
-    { value: 'chubu', label: 'Chubu' },
-    { value: 'hokkaido', label: 'Hokkaido' },
-  ],
-  sg: [
-    { value: 'central', label: 'Central Region' },
-    { value: 'east', label: 'East Region' },
-    { value: 'north', label: 'North Region' },
-    { value: 'west', label: 'West Region' },
-  ],
-  in: [
-    { value: 'delhi', label: 'Delhi' },
-    { value: 'mumbai', label: 'Maharashtra' },
-    { value: 'bangalore', label: 'Karnataka' },
-    { value: 'hyderabad', label: 'Telangana' },
-    { value: 'chennai', label: 'Tamil Nadu' },
-    { value: 'kolkata', label: 'West Bengal' },
-    { value: 'ahmedabad', label: 'Gujarat' },
-    { value: 'lucknow', label: 'Uttar Pradesh' },
-    { value: 'jaipur', label: 'Rajasthan' },
-    { value: 'chandigarh', label: 'Punjab' },
-    { value: 'bhopal', label: 'Madhya Pradesh' },
-    { value: 'patna', label: 'Bihar' },
-    { value: 'guwahati', label: 'Assam' },
-    { value: 'bhubaneswar', label: 'Odisha' },
-    { value: 'thiruvananthapuram', label: 'Kerala' },
-    { value: 'raipur', label: 'Chhattisgarh' },
-    { value: 'ranchi', label: 'Jharkhand' },
-    { value: 'dehradun', label: 'Uttarakhand' },
-    { value: 'shimla', label: 'Himachal Pradesh' },
-    { value: 'srinagar', label: 'Jammu & Kashmir' },
-    { value: 'gangtok', label: 'Sikkim' },
-    { value: 'aizawl', label: 'Mizoram' },
-    { value: 'kohima', label: 'Nagaland' },
-    { value: 'shillong', label: 'Meghalaya' },
-    { value: 'agartala', label: 'Tripura' },
-    { value: 'itanagar', label: 'Arunachal Pradesh' },
-    { value: 'panaji', label: 'Goa' },
-    { value: 'silvassa', label: 'Dadra & Nagar Haveli' },
-    { value: 'daman', label: 'Daman & Diu' },
-    { value: 'kavaratti', label: 'Lakshadweep' },
-    { value: 'port-blair', label: 'Andaman & Nicobar Islands' },
-    { value: 'puducherry', label: 'Puducherry' },
-    { value: 'andhra-pradesh', label: 'Andhra Pradesh' },
-    { value: 'ladakh', label: 'Ladakh' },
-  ],
-  br: [
-    { value: 'sao-paulo', label: 'São Paulo' },
-    { value: 'rio-de-janeiro', label: 'Rio de Janeiro' },
-    { value: 'minas-gerais', label: 'Minas Gerais' },
-    { value: 'bahia', label: 'Bahia' },
-  ],
-};
 
 const StartupForm = () => {
   const { formData, updateFormData, isFormComplete } = useFormContext();
@@ -132,12 +24,23 @@ const StartupForm = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     // console.log(formData);
+    localStorage.clear();
     setLoading(true);
+    console.log("frontend",formData);
+    
     e.preventDefault();
     try {
+     localStorage.setItem("formData", JSON.stringify(formData));
     const response= await generateRoadmap(formData);
+    const swotanalysis=await generateSWOTAnalysis(formData);
+    const fetchLegalChecklist=await generateLegalChecklist(formData);
+    const failurePrediction=await generateFailurePrediction(formData);
+    
+   
+    
+   
     if (response) {
-      navigate("/roadmap-result", { state: { response } }); // ✅ Navigate with data
+      navigate("/roadmap-result"); // ✅ Navigate with data
     }
       
     } catch (error) {

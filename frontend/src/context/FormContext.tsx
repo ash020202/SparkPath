@@ -1,42 +1,8 @@
 
+import { defaultFormData } from '@/lib/mockData';
+import { FormContextType, FormData } from '@/lib/types';
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-type FormData = {
-  industry: string;
-  budget: string;
-  teamSize: string;
-  marketSize: string;
-  problemStatement: string;
-  targetCustomer: string;
-  uniqueValueProposition: string;
-  competitors: string;
-  goToMarketStrategy: string;
-  revenueModel: string;
-  country: string;
-  region: string;
-};
-
-const defaultFormData: FormData = {
-  industry: '',
-  budget: '',
-  teamSize: '',
-  marketSize: '',
-  problemStatement: '',
-  targetCustomer: '',
-  uniqueValueProposition: '',
-  competitors: '',
-  goToMarketStrategy: '',
-  revenueModel: '',
-  country: '',
-  region: '',
-};
-
-type FormContextType = {
-  formData: FormData;
-  updateFormData: (field: keyof FormData, value: string) => void;
-  resetForm: () => void;
-  isFormComplete: boolean;
-};
 
 const FormContext = createContext<FormContextType | undefined>(undefined);
 
@@ -50,7 +16,6 @@ export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }));
   };
 
-  // console.log(formData);
   
   const resetForm = () => {
     setFormData(defaultFormData);
